@@ -4,668 +4,651 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kuis Interaktif Kediri Raya</title>
-    <!-- Load Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Lucide Icons for UI elements -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Load Tailwind CSS CDN for modern styling --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Tone.js for audio generation --><script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
     <style>
-        /* Konfigurasi Tailwind Kustom */
-        :root {
-            /* Warna Biru Keemasan Khas Kediri */
-            --color-primary: #1e3a8a; /* Biru Tua/Navy */
-            --color-accent: #fcd34d; /* Emas */
-            --color-bg: #f8fafc; /* Latar Belakang Cerah */
+        /* Menggunakan font Inter sebagai standar modern */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f3ff6;
+            overflow: hidden; /* Mencegah scroll saat ada transisi */
         }
-        
-        .shadow-kediri {
-            box-shadow: 0 10px 15px -3px rgba(30, 58, 138, 0.3), 0 4px 6px -2px rgba(30, 58, 138, 0.1);
-        }
-
-        .bg-kediri-primary { background-color: var(--color-primary); }
-        .text-kediri-primary { color: var(--color-primary); }
-        .bg-kediri-accent { background-color: var(--color-accent); }
-        .text-kediri-accent { color: var(--color-accent); }
-        .border-kediri-accent { border-color: var(--color-accent); }
-
-        /* Background Simpang Lima Gumul (SLG) - Placeholder */
-        .bg-slg {
-            background-image: url('https://placehold.co/1200x800/253966/ffffff?text=SLG');
+        /* Styling untuk background Simpang Lima Gumul (SLG) yang lembut */
+        .slg-bg {
+            /* URL gambar diubah menjadi file lokal 'Monumen-Simpang-Lima-Gumul.jpg' */
+            background-image: url('Monumen-Simpang-Lima-Gumul.jpg');
             background-size: cover;
             background-position: center;
-            filter: blur(5px);
-            transition: filter 0.5s ease;
+            filter: blur(8px);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            transition: all 0.5s ease;
         }
 
-        /* Kelas untuk animasi Fade In */
-        .fade-in {
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
-        }
-        .fade-in.active {
-            opacity: 1;
+        /* Container utama dengan efek kaca/blur */
+        .main-container {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
         }
 
-        /* Animasi Glow pada Tombol Level */
-        .level-button:hover {
-            box-shadow: 0 0 20px var(--color-accent);
-            transform: translateY(-2px);
+        /* Styling Card Kaca */
+        .glass-card {
+            background-color: rgba(255, 255, 255, 0.85); /* Sedikit transparan */
+            backdrop-filter: blur(10px);
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 2.5rem;
+            transition: all 0.5s ease;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        /* Tombol Utama Glow */
+        .btn-glow {
+            background-image: linear-gradient(135deg, #FFD700 0%, #000080 100%); /* Emas ke Biru Navy */
+            color: white;
             transition: all 0.3s ease;
+            border: none;
         }
-
-        /* Custom shape untuk tombol level: oval depan bawah (simulasi) */
-        .level-button {
-            clip-path: polygon(0% 0%, 100% 0%, 100% 85%, 50% 100%, 0% 85%);
-            border-radius: 0.75rem; /* Menjaga sudut tetap membulat di bagian atas */
-            padding-bottom: 2rem; /* Ruang ekstra untuk bentuk bawah */
+        .btn-glow:hover {
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.8), 0 0 30px rgba(0, 0, 128, 0.5);
+            transform: translateY(-2px);
         }
         
-        /* Animasi Jawaban */
-        .option-button {
-            transition: all 0.2s ease;
+        /* Tombol Level Oval Depan Bawah */
+        .level-btn {
+            background-color: #000080; /* Biru Navy */
+            color: #FFD700; /* Emas */
+            border-radius: 1.5rem 0.5rem 2.5rem 0.5rem; /* Oval Depan Bawah Khas */
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            font-weight: 600;
         }
-        .option-button:hover:not(.disabled) {
+        .level-btn:hover:not(.locked) {
+            background-color: #000050;
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.5), 0 0 5px rgba(255, 215, 0, 0.2);
             transform: scale(1.02);
-            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Tombol Level Terkunci */
+        .level-btn.locked {
+            opacity: 0.4;
+            cursor: not-allowed;
+            background-color: #6b7280; /* Abu-abu */
+            color: #d1d5db;
+            box-shadow: none;
+        }
+        
+        /* Animasi Fade In */
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+            opacity: 0;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Gaya Tombol Non-aktif/Terkunci */
-        .locked-level {
-            filter: grayscale(80%);
-            opacity: 0.5;
-            cursor: not-allowed;
-            pointer-events: none;
-            box-shadow: none !important;
-            transform: none !important;
+        /* Animasi Slide */
+        .slide-up {
+            animation: slideUp 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+            opacity: 0;
         }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
     </style>
 </head>
-<body class="font-sans antialiased text-gray-800 h-screen overflow-hidden flex flex-col">
+<body>
 
-    <!-- Latar Belakang SLG Blur -->
-    <div id="bg-slg" class="bg-slg fixed inset-0 z-0"></div>
+    <!-- Audio Control Button --><button id="mute-btn" class="fixed top-4 right-4 z-50 p-3 rounded-full bg-blue-900 text-yellow-300 shadow-xl hover:bg-blue-800 transition">
+        <!-- Icon Speaker (Mute/Unmute handled by JS) --><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H3a1 1 0 01-1-1V9a1 1 0 011-1h2.586l7-7h1a1 1 0 011 1v12a1 1 0 01-1 1h-1l-7-7z" />
+        </svg>
+    </button>
+    
+    <!-- Background SLG --><div class="slg-bg"></div>
 
-    <!-- Kontainer Utama Aplikasi -->
-    <div class="relative z-10 flex-grow overflow-auto p-4 md:p-8">
+    <!-- Main Container to Center Content --><div class="main-container">
+        
+        <!-- Halaman Utama (Home Page) --><div id="home-page" class="page active">
+            <div class="glass-card slide-up text-center">
+                <h1 class="text-4xl font-extrabold text-blue-900 mb-2">Kuis Kediri Raya</h1>
+                <p class="text-lg text-gray-600 mb-8">Uji pengetahuanmu tentang Kota dan Kabupaten Kediri!</p>
 
-        <!-- Tombol Audio (Mute/Unmute) -->
-        <button id="audio-toggle" class="fixed top-4 right-4 z-50 p-3 rounded-full bg-kediri-primary text-kediri-accent shadow-lg transition duration-300 hover:bg-blue-900 focus:outline-none">
-            <i data-lucide="volume-2" class="w-6 h-6"></i>
-        </button>
+                <div id="welcome-box">
+                    <form id="player-form" class="space-y-4 text-left">
+                        <div>
+                            <label for="player-name" class="block text-sm font-medium text-gray-700">Nama</label>
+                            <input type="text" id="player-name" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 transition duration-150 ease-in-out">
+                        </div>
+                        <div>
+                            <label for="player-class" class="block text-sm font-medium text-gray-700">Kelas</label>
+                            <input type="text" id="player-class" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 transition duration-150 ease-in-out">
+                        </div>
+                        <div>
+                            <label for="player-school" class="block text-sm font-medium text-gray-700">Asal Sekolah</label>
+                            <input type="text" id="player-school" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 transition duration-150 ease-in-out">
+                        </div>
+                        <div id="error-message" class="text-red-600 text-sm hidden font-medium">Semua kolom wajib diisi!</div>
+                        <button type="submit" class="w-full mt-6 py-4 px-6 rounded-xl btn-glow text-xl font-bold uppercase tracking-wider">
+                            Mulai Kuis
+                        </button>
+                    </form>
+                </div>
+                
+                <div id="player-info-display" class="hidden mt-4 text-gray-800 text-left space-y-2">
+                    <h2 class="text-2xl font-semibold mb-4 text-blue-800">Selamat Datang!</h2>
+                    <p><strong>Nama:</strong> <span id="display-name"></span></p>
+                    <p><strong>Kelas:</strong> <span id="display-class"></span></p>
+                    <p><strong>Sekolah:</strong> <span id="display-school"></span></p>
+                    <button id="resume-quiz-btn" class="w-full mt-6 py-4 px-6 rounded-xl btn-glow text-xl font-bold uppercase tracking-wider">
+                        Lanjutkan Kuis
+                    </button>
+                    <button id="change-player-btn" class="w-full mt-3 py-2 px-4 rounded-xl bg-gray-300 text-gray-800 hover:bg-gray-400 transition font-semibold">
+                        Ganti Pemain
+                    </button>
+                </div>
 
-        <!-- Pesan Notifikasi (Custom Alert) -->
-        <div id="notification-box" class="fixed top-4 left-1/2 transform -translate-x-1/2 p-4 rounded-lg shadow-2xl bg-red-600 text-white font-bold transition-all duration-300 ease-out opacity-0 translate-y-[-50px] z-50 max-w-sm" style="pointer-events: none;">
-            <!-- Pesan akan diisi oleh JS -->
+            </div>
+        </div>
+        
+        <!-- Halaman Pemilihan Level (Level Selection) --><div id="level-select-page" class="page hidden w-full max-w-4xl">
+            <h1 class="text-4xl font-extrabold text-white text-center mb-10 slide-up">Level Kuis Kediri Raya</h1>
+            <div id="level-grid" class="grid grid-cols-2 md:grid-cols-5 gap-4 fade-in">
+                <!-- Level buttons will be generated here by JavaScript --></div>
         </div>
 
+        <!-- Halaman Kuis (Quiz Page) --><div id="quiz-page" class="page hidden w-full max-w-xl">
+            <div class="glass-card fade-in">
+                <div class="flex justify-between items-center mb-4">
+                    <div id="quiz-level-info" class="text-sm font-medium text-blue-600 bg-blue-100 px-3 py-1 rounded-full">Level X: Tema</div>
+                    <div id="quiz-score-display" class="text-lg font-bold text-yellow-600">Skor: 0</div>
+                </div>
+                <div id="question-area" class="min-h-[250px] flex flex-col justify-between">
+                    <div>
+                        <p id="question-text" class="text-xl font-semibold text-gray-800 mb-6 slide-up">Pertanyaan...</p>
+                    </div>
+                    <div id="options-container" class="space-y-3">
+                        <!-- Options buttons will be generated here --></div>
+                </div>
+            </div>
+        </div>
 
-        <!-- ============================================== -->
-        <!-- 1. HALAMAN UTAMA (Data Diri) -->
-        <!-- ============================================== -->
-        <section id="main-page" class="page flex items-center justify-center h-full">
-            <div class="bg-white/90 backdrop-blur-sm p-6 md:p-10 rounded-xl shadow-kediri w-full max-w-md transition-all duration-500 fade-in active">
-                <div class="text-center mb-6">
-                    <h1 class="text-3xl md:text-4xl font-extrabold text-kediri-primary">
-                        <i data-lucide="book-open-check" class="inline-block w-8 h-8 mr-2 text-kediri-accent"></i>
-                        Kuis Kediri Raya
-                    </h1>
-                    <p class="text-sm text-gray-500 mt-1">Isi data diri Anda untuk memulai perjalanan kuis.</p>
+        <!-- Halaman Hasil (Result Page) --><div id="result-page" class="page hidden">
+            <div class="glass-card text-center slide-up">
+                <h2 id="result-title" class="text-3xl font-bold mb-4 text-blue-900">Hasil Kuis Level X</h2>
+                <div class="flex flex-col items-center mb-6">
+                    <p class="text-lg text-gray-700">Skor Akhir:</p>
+                    <p id="final-score" class="text-6xl font-extrabold text-yellow-600 my-2">0</p>
+                    <p id="result-message" class="text-xl font-medium"></p>
                 </div>
                 
-                <form id="player-form" class="space-y-4">
-                    <div>
-                        <label for="nama" class="block text-sm font-medium text-gray-700">Nama</label>
-                        <input type="text" id="nama" required class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-kediri-accent focus:border-kediri-accent transition duration-150">
-                    </div>
-                    <div>
-                        <label for="kelas" class="block text-sm font-medium text-gray-700">Kelas</label>
-                        <input type="text" id="kelas" required class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-kediri-accent focus:border-kediri-accent transition duration-150">
-                    </div>
-                    <div>
-                        <label for="asal_sekolah" class="block text-sm font-medium text-gray-700">Asal Sekolah</label>
-                        <input type="text" id="asal_sekolah" required class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-kediri-accent focus:border-kediri-accent transition duration-150">
-                    </div>
-                    
-                    <button type="submit" class="w-full bg-kediri-accent text-kediri-primary font-bold py-3 rounded-xl hover:bg-yellow-400 transition duration-300 shadow-lg text-lg mt-6 level-button">
-                        Mulai Kuis
-                    </button>
-                </form>
+                <button id="next-level-btn" class="hidden w-full py-3 px-6 rounded-xl btn-glow text-lg font-bold uppercase tracking-wider mb-3">
+                    Lanjut ke Level Berikutnya
+                </button>
+                <button id="try-again-btn" class="hidden w-full py-3 px-6 rounded-xl bg-red-600 text-white hover:bg-red-700 transition text-lg font-bold uppercase tracking-wider mb-3">
+                    Coba Lagi
+                </button>
+                <button id="back-to-menu-btn" class="w-full py-3 px-6 rounded-xl bg-gray-300 text-gray-800 hover:bg-gray-400 transition text-lg font-bold font-semibold">
+                    Kembali ke Menu Level
+                </button>
             </div>
-        </section>
+        </div>
 
-
-        <!-- ============================================== -->
-        <!-- 2. HALAMAN PEMILIHAN LEVEL -->
-        <!-- ============================================== -->
-        <section id="level-selection-page" class="page hidden pt-10 pb-20">
-            <div class="text-center mb-10">
-                <h2 class="text-4xl md:text-5xl font-extrabold text-white drop-shadow-lg animate-pulse">Level Kuis Kediri Raya</h2>
-                <p id="player-greeting" class="text-white mt-2 text-lg"></p>
-            </div>
-
-            <div id="level-list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 max-w-6xl mx-auto">
-                <!-- Tombol Level akan diisi oleh JS -->
-            </div>
-        </section>
-
-        <!-- ============================================== -->
-        <!-- 3. HALAMAN KUIS -->
-        <!-- ============================================== -->
-        <section id="quiz-page" class="page hidden pt-10 pb-20">
-            <div class="max-w-3xl mx-auto bg-white/95 backdrop-blur-sm p-6 md:p-8 rounded-xl shadow-kediri transition-all duration-500 fade-in active">
-                <div class="flex justify-between items-center mb-6 border-b pb-4">
-                    <h3 id="quiz-level-title" class="text-2xl font-bold text-kediri-primary">Level X - Nama Level</h3>
-                    <div class="text-lg font-semibold text-gray-600">
-                        Soal <span id="current-question-number">1</span>/5
-                    </div>
-                </div>
-
-                <div id="question-container" class="fade-in transition-opacity duration-500">
-                    <p id="question-text" class="text-xl md:text-2xl font-medium mb-8">Teks Pertanyaan...</p>
-                    <div id="options-list" class="space-y-4">
-                        <!-- Opsi Jawaban akan diisi oleh JS -->
-                    </div>
-                </div>
-                
-            </div>
-        </section>
-
-        <!-- ============================================== -->
-        <!-- 4. HALAMAN HASIL -->
-        <!-- ============================================== -->
-        <section id="result-page" class="page hidden flex items-center justify-center h-full">
-            <div class="bg-white/90 backdrop-blur-sm p-8 md:p-12 rounded-xl shadow-kediri w-full max-w-lg text-center transition-all duration-500 fade-in active">
-                <h2 class="text-3xl md:text-4xl font-extrabold mb-4 text-kediri-primary">
-                    <span id="result-emoji" class="text-5xl md:text-6xl block mb-4">🎉</span>
-                    Hasil Kuis Anda!
-                </h2>
-                <p class="text-xl mb-6">Anda menyelesaikan level ini dengan:</p>
-                <div class="text-6xl font-black mb-8 p-6 inline-block rounded-full bg-kediri-primary text-kediri-accent shadow-inner">
-                    <span id="final-score">0</span> Poin
-                </div>
-                
-                <p id="result-message" class="text-2xl font-semibold mb-8 text-green-600">Selamat! Anda lulus!</p>
-
-                <div id="result-actions" class="space-y-4">
-                    <!-- Tombol aksi akan diisi oleh JS -->
-                    <button id="next-level-button" class="w-full bg-kediri-accent text-kediri-primary font-bold py-3 rounded-lg hover:bg-yellow-400 transition duration-300 shadow-md text-lg level-button">
-                        Lanjut ke Level Berikutnya
-                    </button>
-                    <button id="retry-level-button" class="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition duration-300 shadow-md text-lg">
-                        Coba Lagi
-                    </button>
-                    <button id="back-to-level-selection" class="w-full bg-gray-300 text-gray-800 font-bold py-3 rounded-lg hover:bg-gray-400 transition duration-300 shadow-md text-lg">
-                        Kembali ke Menu Level
-                    </button>
-                </div>
-            </div>
-        </section>
     </div>
 
-    <!-- Script Utama Game -->
     <script>
-        // Data Kuis (10 Level @ 5 Soal)
+        // --- 1. DATA KUIS (10 Level x 5 Soal) ---
         const quizData = [
             // Level 1: Pengenalan Kediri
             { theme: "Pengenalan Kediri", questions: [
-                { q: "Apa nama monumen terkenal di Kediri yang sangat mirip dengan Arc de Triomphe di Paris?", a: "Simpang Lima Gumul (SLG)", b: "Monumen Jayabaya", c: "Tugu Pahlawan", d: "Candi Penataran", correct: "A" },
-                { q: "Kediri dikenal sebagai 'Kota...'?", a: "Tahu", b: "Apel", c: "Batik", d: "Susu", correct: "A" },
-                { q: "Kediri terletak di provinsi mana di Indonesia?", a: "Jawa Barat", b: "Jawa Tengah", c: "Jawa Timur", d: "DKI Jakarta", correct: "C" },
-                { q: "Sungai besar yang membelah Kota Kediri adalah?", a: "Bengawan Solo", b: "Brantas", c: "Code", d: "Kapuas", correct: "B" },
-                { q: "Apa slogan atau semboyan Kediri yang paling terkenal?", a: "Bersatu Teguh", b: "Kediri Beriman", c: "Kediri The Service City", d: "Jatim Makmur", correct: "C" },
+                { q: "Monumen ikonik Kediri yang sering disebut replika Arc de Triomphe adalah...", options: ["Tugu Pahlawan", "Simpang Lima Gumul", "Monumen Suryo", "Jembatan Brawijaya"], answer: "Simpang Lima Gumul" },
+                { q: "Kediri terkenal dengan julukan kota...", options: ["Tahu", "Apel", "Gudeg", "Sate"], answer: "Tahu" },
+                { q: "Makanan khas Kediri yang terbuat dari olahan kacang kedelai, memiliki tekstur padat, dan warna kuning, adalah...", options: ["Tahu Takwa", "Tahu Sumedang", "Tahu Pong", "Tahu Petis"], answer: "Tahu Takwa" },
+                { q: "Sungai besar yang membelah Kota dan Kabupaten Kediri adalah...", options: ["Bengawan Solo", "Brantas", "Serayu", "Citarum"], answer: "Brantas" },
+                { q: "Bandar udara yang baru diresmikan di Kediri adalah...", options: ["Dhoho International Airport", "Juanda Airport", "Abdul Rachman Saleh Airport", "Adi Sucipto Airport"], answer: "Dhoho International Airport" },
             ]},
             // Level 2: Geografi Kediri
             { theme: "Geografi Kediri", questions: [
-                { q: "Gunung berapi yang menjadi ikon dan berada di timur Kediri adalah?", a: "Gunung Semeru", b: "Gunung Kelud", c: "Gunung Bromo", d: "Gunung Lawu", correct: "B" },
-                { q: "Batas wilayah Kediri di sebelah utara adalah Kabupaten...", a: "Nganjuk", b: "Tulungagung", c: "Blitar", d: "Jombang", correct: "D" },
-                { q: "Kediri terdiri dari dua wilayah administratif yaitu Kota Kediri dan...", a: "Kediri Selatan", b: "Kabupaten Kediri", c: "Kediri Utara", d: "Kediri Timur", correct: "B" },
-                { q: "Berapa ketinggian rata-rata Kota Kediri di atas permukaan laut?", a: "50-70 mdpl", b: "100-150 mdpl", c: "200-300 mdpl", d: "400-500 mdpl", correct: "A" },
-                { q: "Daerah Kediri yang terkenal dengan perkebunan cengkeh dan kopi berada di kawasan...", a: "Dataran Rendah", b: "Pesisir", c: "Kaki Gunung Kelud", d: "Tepi Sungai Brantas", correct: "C" },
+                { q: "Gunung tertinggi yang berbatasan langsung dengan Kabupaten Kediri di sisi timur adalah...", options: ["Gunung Semeru", "Gunung Kelud", "Gunung Bromo", "Gunung Wilis"], answer: "Gunung Kelud" },
+                { q: "Kediri berbatasan di sebelah barat dengan...", options: ["Nganjuk dan Jombang", "Tulungagung dan Blitar", "Ponorogo dan Trenggalek", "Madiun dan Ngawi"], answer: "Nganjuk dan Jombang" },
+                { q: "Air Terjun Dolo dan Air Terjun Irenggolo berada di lereng...", options: ["Gunung Kelud", "Gunung Wilis", "Gunung Semeru", "Gunung Lawu"], answer: "Gunung Wilis" },
+                { q: "Berapa jumlah kecamatan yang ada di Kota Kediri?", options: ["5 Kecamatan", "3 Kecamatan", "7 Kecamatan", "10 Kecamatan"], answer: "3 Kecamatan" },
+                { q: "Danau buatan yang sering digunakan untuk irigasi dan wisata di Kediri adalah...", options: ["Waduk Selorejo", "Waduk Bening Widas", "Waduk Darungan", "Waduk Waru Turi"], answer: "Waduk Waru Turi" },
             ]},
             // Level 3: Kuliner Khas Kediri
             { theme: "Kuliner Khas Kediri", questions: [
-                { q: "Makanan khas Kediri yang terkenal dengan kuah santan pedas dan biasanya menggunakan jeroan sapi adalah?", a: "Nasi Pecel", b: "Soto Kediri", c: "Nasi Goreng", d: "Sate Kelinci", correct: "B" },
-                { q: "Oleh-oleh yang terbuat dari kedelai dan sangat identik dengan Kediri adalah?", a: "Kripik Singkong", b: "Tahu Takwa", c: "Jenang", d: "Getuk", correct: "B" },
-                { q: "Jajanan manis yang terbuat dari ketan dan gula merah serta dibungkus daun pisang yang sering ditemui di Kediri adalah?", a: "Wingko Babat", b: "Jenang Gulo", c: "Getuk Pisang", d: "Nagasari", correct: "D" },
-                { q: "Selain Tahu Takwa, Kediri juga terkenal dengan minuman berbahan dasar beras ketan yang difermentasi, yaitu?", a: "Wedang Jahe", b: "Es Campur", c: "Pace", d: "Tape Ketan", correct: "D" },
-                { q: "Makanan yang terbuat dari beras dan biasanya disajikan dengan lauk pauk sederhana, khas daerah Gampengrejo, Kediri?", a: "Sego Tiwul", b: "Nasi Jagung", c: "Nasi Grombyang", d: "Nasi Ampok", correct: "D" },
+                { q: "Selain Tahu Takwa, Kediri memiliki Tahu Pong yang disajikan dengan bumbu petis. Nama tahu ini merujuk pada...", options: ["Rasa Asin", "Bentuk Kotak", "Berongga di Dalam", "Warna Merah"], answer: "Berongga di Dalam" },
+                { q: "Makanan nasi dengan aneka sayuran, lauk, dan sambal khas Kediri yang pedas disebut...", options: ["Nasi Goreng", "Pecel", "Gado-Gado", "Rawon"], answer: "Pecel" },
+                { q: "Minuman tradisional Kediri yang terbuat dari beras ketan hitam yang difermentasi, sering disebut...", options: ["Dawet", "Es Cendol", "Tape Ketan Hitam", "Es Legen"], answer: "Tape Ketan Hitam" },
+                { q: "Sambal khas Kediri yang terbuat dari terasi udang yang dimasak dengan tomat dan cabai adalah...", options: ["Sambal Terasi", "Sambal Tumpang", "Sambal Dabu-Dabu", "Sambal Matah"], answer: "Sambal Tumpang" },
+                { q: "Lauk khas dari Kediri yang berupa kerupuk dari kulit sapi yang digoreng adalah...", options: ["Krecek", "Rambak", "Opak", "Lanting"], answer: "Rambak" },
             ]},
             // Level 4: Kesenian Kediri
             { theme: "Kesenian Kediri", questions: [
-                { q: "Kesenian tari tradisional Kediri yang melibatkan penari dengan topeng besar dan rambut panjang adalah?", a: "Tari Reog", b: "Tari Topeng Panji", c: "Tari Gambyong", d: "Tari Remo", correct: "B" },
-                { q: "Instrumen musik tradisional yang paling banyak digunakan dalam seni Jaranan Khas Kediri?", a: "Angklung", b: "Gamelan", c: "Suling", d: "Kendang", correct: "D" },
-                { q: "Siapa tokoh seniman Kediri yang dikenal sebagai maestro tari Topeng Panji?", a: "Ki Narto Sabdo", b: "Mbah Gino", c: "Bagong Kussudiardja", d: "Didik Nini Thowok", correct: "B" },
-                { q: "Jenis wayang kulit yang berkembang di Kediri dan biasanya menceritakan kisah Panji adalah?", a: "Wayang Purwa", b: "Wayang Klithik", c: "Wayang Gedog", d: "Wayang Golek", correct: "C" },
-                { q: "Tradisi upacara adat di Kediri yang diadakan setahun sekali sebagai rasa syukur masyarakat Kediri?", a: "Grebeg Sudiro", b: "Larung Sesaji", c: "Tumpeng Sewu", d: "Grebeg Maulud", correct: "B" },
+                { q: "Tari khas Kediri yang melibatkan penari dengan kuda tiruan dan penari berkepala singa adalah...", options: ["Reog Ponorogo", "Jaranan", "Tari Topeng", "Tari Remo"], answer: "Jaranan" },
+                { q: "Alat musik tradisional yang sering mengiringi kesenian Jaranan dan terbuat dari bambu adalah...", options: ["Gamelan", "Angklung", "Gong", "Kompang"], answer: "Kompang" },
+                { q: "Salah satu jenis batik Kediri yang terkenal dengan motif Simpang Lima Gumul adalah...", options: ["Batik Parang", "Batik Kawung", "Batik Khas Kediri", "Batik Truntum"], answer: "Batik Khas Kediri" },
+                { q: "Wayang khas Kediri yang terkenal adalah Wayang Klithik, yang terbuat dari bahan...", options: ["Kulit", "Kertas", "Kayu", "Plastik"], answer: "Kayu" },
+                { q: "Seniman legendaris dari Kediri yang terkenal dengan karya-karya lukisan naturalisnya adalah...", options: ["Affandi", "Raden Saleh", "Basuki Abdullah", "Trubus Soedarsono"], answer: "Trubus Soedarsono" },
             ]},
             // Level 5: Ciri Khas dan Keunikan Kediri
             { theme: "Ciri Khas dan Keunikan Kediri", questions: [
-                { q: "Kediri sering disebut sebagai 'Kota Tahu', apa alasannya?", a: "Banyak pabrik tahu besar", b: "Kualitas air yang baik untuk tahu", c: "Ada festival tahu tahunan", d: "Semua benar", correct: "B" },
-                { q: "Simpang Lima Gumul dibangun sebagai simbol pertemuan 5 jalur utama, yaitu Kediri, Tulungagung, Blitar, Pare, dan...", a: "Jombang", b: "Nganjuk", c: "Malang", d: "Surabaya", correct: "B" },
-                { q: "Jembatan bersejarah di Kediri yang menjadi penghubung Kota dan Kabupaten Kediri di atas Sungai Brantas?", a: "Jembatan Suramadu", b: "Jembatan Brawijaya", c: "Jembatan Lama", d: "Jembatan Merah", correct: "B" },
-                { q: "Nama bandara internasional yang dibangun di Kediri adalah?", a: "Bandara Dhoho", b: "Bandara Abdul Rachman Saleh", c: "Bandara Juanda", d: "Bandara I Gusti Ngurah Rai", correct: "A" },
-                { q: "Industri rokok besar di Kediri yang paling terkenal adalah?", a: "Gudang Garam", b: "Sampoerna", c: "Djarum", d: "Bentoel", correct: "A" },
+                { q: "Slogan yang melekat pada Kota Kediri adalah...", options: ["Bersinar", "Berbudaya", "Jayabaya", "Harmoni"], answer: "Harmoni" },
+                { q: "Komoditas pertanian utama dari Kabupaten Kediri yang terkenal adalah...", options: ["Tebu", "Padi", "Cengkeh", "Nanas"], answer: "Nanas" },
+                { q: "Perusahaan rokok besar yang berbasis di Kediri dan menjadi salah satu ikon kota adalah...", options: ["Gudang Garam", "Sampoerna", "Djarum", "Bentoel"], answer: "Gudang Garam" },
+                { q: "Panggilan akrab untuk masyarakat Kediri yang biasanya digunakan untuk menyapa teman adalah...", options: ["Cak", "Mas", "Dulur", "Rek"], answer: "Dulur" },
+                { q: "Desa yang terkenal dengan produksi tahu takwa secara massal di Kediri adalah...", options: ["Desa Tiron", "Desa Ngasem", "Desa Sambi", "Desa Kediri"], answer: "Desa Tiron" },
             ]},
             // Level 6: Tempat Wisata Kediri
             { theme: "Tempat Wisata Kediri", questions: [
-                { q: "Wisata alam air terjun di Kediri yang terkenal dengan tujuh tingkatan adalah?", a: "Air Terjun Dolo", b: "Air Terjun Sedudo", c: "Air Terjun Irenggolo", d: "Air Terjun Tretes", correct: "C" },
-                { q: "Di manakah lokasi dari Candi Surowono berada?", a: "Kecamatan Ngancar", b: "Kecamatan Pare", c: "Kecamatan Badas", d: "Kecamatan Gurah", correct: "D" },
-                { q: "Taman yang menjadi paru-paru kota Kediri dan sering digunakan untuk kegiatan publik adalah?", a: "Taman Rekreasi Goa Selomangleng", b: "Taman Hijau", c: "Alun-Alun Kediri", d: "Taman Kilisuci", correct: "C" },
-                { q: "Goa peninggalan bersejarah di Kediri yang konon dihuni oleh Dewi Kilisuci?", a: "Goa Gong", b: "Goa Selomangleng", c: "Goa Tabuhan", d: "Goa Pindul", correct: "B" },
-                { q: "Wisata religi yang merupakan makam dari salah satu Raja Kediri terkenal?", a: "Makam Sunan Kalijaga", b: "Makam Kyai Nur Salim", c: "Makam KH. Abdul Wahab Chasbullah", d: "Makam Eyang Djoho", correct: "B" },
+                { q: "Goa bersejarah yang terletak di lereng Gunung Klotok, Kota Kediri adalah...", options: ["Goa Gong", "Goa Selomangleng", "Goa Tabuhan", "Goa Jatijajar"], answer: "Goa Selomangleng" },
+                { q: "Tempat wisata religi yang merupakan makam dari tokoh pendiri Pondok Pesantren Lirboyo adalah...", options: ["Makam Sunan Ampel", "Makam Gus Dur", "Makam Kyai Abdul Karim", "Makam Wali Songo"], answer: "Makam Kyai Abdul Karim" },
+                { q: "Museum di Kediri yang menyimpan koleksi benda-benda sejarah kerajaan adalah...", options: ["Museum Angkut", "Museum Satwa", "Museum Airlangga", "Museum Trowulan"], answer: "Museum Airlangga" },
+                { q: "Destinasi wisata alam yang menawarkan pemandangan pegunungan dan sering digunakan untuk berkemah adalah...", options: ["Pantai Prigi", "Gunung Kelud", "Puncak Mahameru", "Pulau Sempu"], answer: "Gunung Kelud" },
+                { q: "Taman kota yang menjadi paru-paru kota Kediri dan tempat rekreasi keluarga adalah...", options: ["Taman Bungkul", "Taman Sekartaji", "Taman Alun-Alun", "Taman Hutan Raya"], answer: "Taman Sekartaji" },
             ]},
             // Level 7: Sejarah Kerajaan Kediri
             { theme: "Sejarah Kerajaan Kediri", questions: [
-                { q: "Siapa raja pertama yang memimpin Kerajaan Kediri?", a: "Mpu Sindok", b: "Kertajaya", c: "Jayabaya", d: "Sri Samarawijaya", correct: "D" },
-                { q: "Kitab sastra terkenal yang ditulis pada masa Kerajaan Kediri dan berisi tentang kisah Bharatayudha?", a: "Negarakertagama", b: "Sutasoma", c: "Arjuna Wiwaha", d: "Kakawin Bharatayudha", correct: "D" },
-                { q: "Tahun berapa Kerajaan Kediri mencapai masa keemasan di bawah Raja Jayabaya?", a: "1135 - 1157 M", b: "1042 - 1050 M", c: "1222 - 1240 M", d: "1350 - 1389 M", correct: "A" },
-                { q: "Kerajaan Kediri runtuh setelah dikalahkan oleh Ken Arok dari Kerajaan...", a: "Majapahit", b: "Singasari", c: "Tarumanegara", d: "Sriwijaya", correct: "B" },
-                { q: "Raja terakhir Kerajaan Kediri adalah?", a: "Raja Jayakatwang", b: "Raja Kertajaya", c: "Raja Airlangga", d: "Raja Brawijaya", correct: "B" },
+                { q: "Kerajaan besar yang berpusat di Kediri dan mencapai puncak kejayaannya pada masa Raja Jayabaya adalah...", options: ["Singhasari", "Majapahit", "Daha/Kediri", "Sriwijaya"], answer: "Daha/Kediri" },
+                { q: "Prasasti peninggalan Raja Airlangga yang membagi Kerajaan Mataram Kuno menjadi Janggala dan Panjalu (Kediri) adalah...", options: ["Prasasti Kanjuruhan", "Prasasti Calcuta (Pucangan)", "Prasasti Talang Tuwo", "Prasasti Canggal"], answer: "Prasasti Calcuta (Pucangan)" },
+                { q: "Tokoh yang terkenal dengan ramalan masa depannya (Jangka Jayabaya) adalah...", options: ["Mpu Tantular", "Raja Kertanegara", "Raja Jayabaya", "Gajah Mada"], answer: "Raja Jayabaya" },
+                { q: "Karya sastra terkenal pada masa Kerajaan Kediri yang ditulis oleh Mpu Sedah dan Mpu Panuluh adalah...", options: ["Kitab Nagarakertagama", "Kitab Pararaton", "Kitab Bharatayudha", "Kitab Sutasoma"], answer: "Kitab Bharatayudha" },
+                { q: "Raja terakhir Kerajaan Kediri sebelum ditaklukkan oleh Ken Arok (Singhasari) adalah...", options: ["Kertajaya", "Dharmavamsa", "Airlangga", "Jayakatwang"], answer: "Kertajaya" },
             ]},
             // Level 8: Tokoh-Tokoh Kediri
             { theme: "Tokoh-Tokoh Kediri", questions: [
-                { q: "Siapa tokoh legendaris Kediri yang terkenal dengan ramalan Jangka Jayabaya?", a: "Raden Wijaya", b: "Prabu Jayabaya", c: "Ken Arok", d: "Raja Kertajaya", correct: "B" },
-                { q: "Tokoh ulama pendiri Nahdlatul Ulama (NU) yang berasal dari Jombang namun memiliki pesantren besar di Kediri?", a: "KH Hasyim Asy'ari", b: "KH. Anwar Iskandar", c: "KH. Maimun Zubair", d: "KH. Abdul Wahab Chasbullah", correct: "A" },
-                { q: "Tokoh pergerakan nasional yang pernah menjabat sebagai Menteri Pertanian RI dan berasal dari Kediri?", a: "Soekarno", b: "Mohammad Hatta", c: "Surono Reksodimedjo", d: "Ir. Sutami", correct: "C" },
-                { q: "Tokoh Kediri yang dikenal sebagai salah satu ulama terbesar di Indonesia dan pendiri Pondok Pesantren Lirboyo?", a: "KH. Abdul Karim", b: "Gus Dur", c: "KH. Mustofa Bisri", d: "Buya Hamka", correct: "A" },
-                { q: "Pahlawan nasional yang makamnya berada di Kediri dan dikenal sebagai pejuang kemerdekaan?", a: "Pangeran Diponegoro", b: "Supriyadi", c: "Jendral Sudirman", d: "Untung Suropati", correct: "B" },
+                { q: "Salah satu pahlawan nasional dari Kediri yang dikenal sebagai ulama besar dan pendiri Pondok Pesantren Lirboyo adalah...", options: ["KH Hasyim Asy'ari", "KH Abdul Karim", "KH Ahmad Dahlan", "KH Wahid Hasyim"], answer: "KH Abdul Karim" },
+                { q: "Pendiri Kerajaan Kediri (Panjalu) setelah pembagian Kerajaan Mataram Kuno oleh Airlangga adalah...", options: ["Sri Samarawijaya", "Mpu Sindok", "Ken Arok", "Raja Balaputradewa"], answer: "Sri Samarawijaya" },
+                { q: "Tokoh terkenal dari Kediri yang merupakan pencipta lambang negara Garuda Pancasila adalah...", options: ["Sultan Hamengkubuwono IX", "Mohammad Hatta", "Sultan Hamid II", "Soekarno"], answer: "Sultan Hamid II" },
+                { q: "Pujangga Kerajaan Kediri yang terkenal dengan Kitab Arjunawiwaha adalah...", options: ["Mpu Panuluh", "Mpu Kanwa", "Mpu Dharmaja", "Mpu Tantular"], answer: "Mpu Kanwa" },
+                { q: "Siapa nama Wali Kota Kediri yang pertama menjabat setelah kemerdekaan?", options: ["Soekarwo", "Moestopo", "RM Soeprapto", "Subroto"], answer: "RM Soeprapto" },
             ]},
             // Level 9: Peninggalan Sejarah Kediri
             { theme: "Peninggalan Sejarah Kediri", questions: [
-                { q: "Candi di Kediri yang bentuknya berupa yoni dan lingga serta erat kaitannya dengan Kerajaan Kediri?", a: "Candi Borobudur", b: "Candi Prambanan", c: "Candi Tegowangi", d: "Candi Tikus", correct: "C" },
-                { q: "Salah satu prasasti penting di Kediri yang berisi tentang penetapan Desa Harinjing sebagai sima (tanah bebas pajak)?", a: "Prasasti Watu Gilang", b: "Prasasti Harinjing", c: "Prasasti Canggal", d: "Prasasti Sanggurah", correct: "B" },
-                { q: "Museum di Kota Kediri yang menyimpan berbagai koleksi benda bersejarah dan artefak Kediri Raya?", a: "Museum Mpu Tantular", b: "Museum Airlangga", c: "Museum Sangiran", d: "Museum Geologi", correct: "B" },
-                { q: "Situs bersejarah di Kediri yang merupakan lokasi ditemukan Arca Ganesha terbesar di Jawa Timur?", a: "Situs Tondowongso", b: "Situs Bleduk Kuwu", c: "Situs Gunung Padang", d: "Situs Patung Budha", correct: "A" },
-                { q: "Sumur yang dipercaya dapat memberikan keberkahan dan terletak di kawasan Pemandian Tirtoyoso?", a: "Sumur Tujuh", b: "Sumur Jalatunda", c: "Sumur Upas", d: "Sumur Mas", correct: "A" },
+                { q: "Candi peninggalan Kerajaan Kediri yang terletak di kaki Gunung Wilis adalah...", options: ["Candi Prambanan", "Candi Borobudur", "Candi Penataran", "Candi Surowono"], answer: "Candi Surowono" },
+                { q: "Prasasti yang berisi tentang pemberian hadiah tanah kepada rakyat oleh Raja Sri Jayawarsa adalah...", options: ["Prasasti Ngantang", "Prasasti Sirah Keting", "Prasasti Anjuk Ladang", "Prasasti Wurare"], answer: "Prasasti Sirah Keting" },
+                { q: "Situs bersejarah yang dipercaya sebagai petilasan pertapaan Raja Airlangga adalah...", options: ["Situs Trowulan", "Situs Goa Selomangleng", "Situs Tirta Yoni", "Situs Sendang Kamal"], answer: "Situs Tirta Yoni" },
+                { q: "Benteng pertahanan Belanda yang masih berdiri kokoh di Kediri adalah...", options: ["Benteng Van Der Wijck", "Benteng Vredeburg", "Benteng Pendem", "Benteng Fort Rotterdam"], answer: "Benteng Pendem" },
+                { q: "Candi yang dulunya merupakan makam pendiri Kerajaan Kediri, Sri Samarawijaya, adalah...", options: ["Candi Tegowangi", "Candi Sumberawan", "Candi Jago", "Candi Muara Takus"], answer: "Candi Tegowangi" },
             ]},
             // Level 10: Kuis Campuran Tingkat Lanjut
             { theme: "Kuis Campuran Tingkat Lanjut", questions: [
-                { q: "Apa nama makanan khas Kediri yang terbuat dari ampas tahu yang difermentasi?", a: "Tempe", b: "Tepo", c: "Dadar Jagung", d: "Gethuk Lindri", correct: "B" },
-                { q: "Di manakah lokasi Pondok Pesantren terbesar dan tertua di Kediri yang didirikan oleh KH. Abdul Karim?", a: "Jamsaren", b: "Lirboyo", c: "Gontor", d: "Tebuireng", correct: "B" },
-                { q: "Kediri pernah menjadi bagian dari kekuasaan Kerajaan mana sebelum menjadi kerajaan mandiri?", a: "Mataram Kuno", b: "Kahuripan", c: "Sriwijaya", d: "Galuh", correct: "B" },
-                { q: "Siapa nama arsitek Simpang Lima Gumul (SLG)?", a: "Ir. Sutami", b: "Ir. Soekarno", c: "Yudha Setyawan", d: "Ir. Tjokropranolo", correct: "C" },
-                { q: "Berapa jumlah kecamatan di Kabupaten Kediri?", a: "15", b: "26", c: "19", d: "23", correct: "B" },
+                { q: "Warna yang mendominasi lambang Kabupaten Kediri adalah...", options: ["Merah dan Putih", "Hijau dan Kuning", "Biru dan Emas", "Hitam dan Putih"], answer: "Biru dan Emas" },
+                { q: "Festival kebudayaan Kediri yang menampilkan tarian dan musik tradisional secara besar-besaran adalah...", options: ["Jember Fashion Carnaval", "Grebeg Sudiro", "Pekan Budaya Kabupaten Kediri", "Festival Kesenian Rakyat"], answer: "Pekan Budaya Kabupaten Kediri" },
+                { q: "Berapakah jumlah gapura (pintu masuk) yang ada pada Simpang Lima Gumul?", options: ["5 Gapura", "4 Gapura", "6 Gapura", "8 Gapura"], answer: "4 Gapura" },
+                { q: "Nama lain dari Kerajaan Kediri pada masa-masa awal berdirinya adalah...", options: ["Janggala", "Singosari", "Daha", "Panjalu"], answer: "Panjalu" },
+                { q: "Jenis tanaman yang paling banyak ditanam di lereng Gunung Wilis bagian Kediri adalah...", options: ["Kopi dan Cengkeh", "Teh dan Kina", "Karet dan Sawit", "Tembakau dan Kapas"], answer: "Kopi dan Cengkeh" },
             ]},
         ];
 
-        // Variabel Status Game
-        let state = {
-            playerName: "",
-            currentLevel: 1,
-            currentQuestionIndex: 0,
-            currentScore: 0,
-            dbScores: JSON.parse(localStorage.getItem('kediriQuizScores')) || {}, // {1: 80, 2: 50, ...}
-            isMuted: false
+        // --- 2. VARIABEL GLOBAL DAN STATE ---
+        let playerName = '';
+        let currentLevel = 1;
+        let currentQuestionIndex = 0;
+        let currentScore = 0;
+        let playerScores = JSON.parse(localStorage.getItem('kediriQuizScores')) || {};
+        let isMuted = false;
+        const PASSING_SCORE = 60;
+        const MAX_LEVEL = quizData.length;
+        const API_KEY = ""; // Kunci API untuk Google Gemini (dibiarkan kosong)
+
+        // --- 3. INISIALISASI AUDIO (TONE.JS) ---
+        let bgm, correctSynth, wrongSynth, buttonClick;
+
+        const initAudio = () => {
+            // Synth untuk BGM (Khas Kediri - menggunakan nada pentatonis yang lembut)
+            // Menggunakan FMSynth untuk suara yang lebih 'berwarna'
+            bgm = new Tone.FMSynth({
+                modulationIndex: 10,
+                envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.1 },
+                harmonicity: 3,
+                oscillator: { type: "square" }
+            }).toDestination();
+            // Loop sederhana, nada F4 - G4 - A4 (pentatonik minor F)
+            const loop = new Tone.Loop(time => {
+                if (!isMuted) {
+                    bgm.triggerAttackRelease("F4", "8n", time);
+                    bgm.triggerAttackRelease("G4", "8n", time + Tone.Time("8n").toSeconds());
+                    bgm.triggerAttackRelease("A4", "8n", time + Tone.Time("4n").toSeconds());
+                }
+            }, "2n").start(0);
+            Tone.Transport.start();
+
+            // Synth untuk Jawaban Benar
+            correctSynth = new Tone.Synth({
+                oscillator: { type: "sine" },
+                envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.5 }
+            }).toDestination();
+
+            // Synth untuk Jawaban Salah
+            wrongSynth = new Tone.Synth({
+                oscillator: { type: "sawtooth" },
+                envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.5 }
+            }).toDestination();
+
+            // Synth untuk Klik Tombol
+            buttonClick = new Tone.NoiseSynth({
+                noise: { type: "white" },
+                envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.05 }
+            }).toDestination();
         };
 
-        // DOM Elements
-        const $ = (id) => document.getElementById(id);
-        const pages = ['main-page', 'level-selection-page', 'quiz-page', 'result-page'];
-
-        // ==============================================
-        // 1. SETUP AUDIO
-        // ==============================================
-
-        // Placeholder Audio URLs (Ganti dengan audio khas Kediri jika tersedia)
-        // Saya menggunakan Tone.js untuk menghasilkan suara sederhana karena pembatasan hosting file.
-        // BGM akan menggunakan placeholder MP3 dari luar.
-        const BGM_URL = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"; // Placeholder
-        const bgMusic = new Audio(BGM_URL);
-        bgMusic.loop = true;
-        bgMusic.volume = 0.3; // Volume sedang
-
-        // Fungsi untuk membuat suara sederhana
-        function playSfx(type) {
-            if (state.isMuted) return;
-            const context = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = context.createOscillator();
-            const gainNode = context.createGain();
-
-            oscillator.connect(gainNode);
-            gainNode.connect(context.destination);
-
-            switch (type) {
-                case 'correct':
-                    oscillator.type = 'sine';
-                    oscillator.frequency.setValueAtTime(880, context.currentTime); // A5
-                    gainNode.gain.setValueAtTime(0.5, context.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.3);
-                    break;
-                case 'wrong':
-                    oscillator.type = 'triangle';
-                    oscillator.frequency.setValueAtTime(110, context.currentTime); // A2
-                    gainNode.gain.setValueAtTime(0.4, context.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.5);
-                    break;
-                case 'click':
-                    oscillator.type = 'square';
-                    oscillator.frequency.setValueAtTime(440, context.currentTime); // A4
-                    gainNode.gain.setValueAtTime(0.3, context.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.1);
-                    break;
+        const playSound = (type) => {
+            if (isMuted) return;
+            // Pastikan Tone.js sudah aktif
+            if (Tone.context.state !== 'running') {
+                Tone.start();
             }
 
-            oscillator.start();
-            setTimeout(() => {
-                oscillator.stop();
-            }, type === 'wrong' ? 500 : 150);
-        }
-
-        function toggleAudio() {
-            state.isMuted = !state.isMuted;
-            localStorage.setItem('kediriQuizMuted', state.isMuted);
-
-            const icon = $('audio-toggle').querySelector('i');
-            if (state.isMuted) {
-                bgMusic.pause();
-                icon.setAttribute('data-lucide', 'volume-x');
-            } else {
-                bgMusic.play().catch(e => console.log("Audio auto-play blocked:", e));
-                icon.setAttribute('data-lucide', 'volume-2');
+            if (type === 'correct') {
+                correctSynth.triggerAttackRelease("C5", "8n");
+            } else if (type === 'wrong') {
+                wrongSynth.triggerAttackRelease("C3", "4n");
+            } else if (type === 'button') {
+                buttonClick.triggerAttackRelease("16n");
             }
-            // Render ulang ikon lucide
-            lucide.createIcons();
-        }
+        };
 
-
-        // ==============================================
-        // 2. NAVIGASI DAN UI UTAMA
-        // ==============================================
-
-        function showNotification(message, isError = true) {
-            const box = $('notification-box');
-            box.textContent = message;
-            box.className = `fixed top-4 left-1/2 transform -translate-x-1/2 p-4 rounded-lg shadow-2xl font-bold transition-all duration-300 ease-out opacity-100 translate-y-0 z-50 max-w-sm ${isError ? 'bg-red-600' : 'bg-green-600'}`;
-            
-            clearTimeout(window.notificationTimeout);
-            window.notificationTimeout = setTimeout(() => {
-                box.classList.remove('opacity-100', 'translate-y-0');
-                box.classList.add('opacity-0', 'translate-y-[-50px]');
-            }, 3000);
-        }
-
-        function showPage(pageId) {
-            pages.forEach(id => {
-                const page = $(id);
-                if (page) {
-                    // Animasi slide/fade out
-                    page.classList.remove('active', 'fade-in');
+        // --- 4. FUNGSI UTILITY UI DAN NAVIGASI ---
+        const showPage = (pageId) => {
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(page => {
+                if (page.id === pageId) {
+                    page.classList.remove('hidden');
+                    page.classList.add('active');
+                    // Tambahkan animasi fade-in/slide-up untuk elemen utama
+                    page.querySelector('.slide-up, .fade-in')?.classList.add('slide-up');
+                    setTimeout(() => {
+                         page.querySelector('.slide-up, .fade-in')?.classList.remove('slide-up');
+                    }, 600);
+                } else {
                     page.classList.add('hidden');
+                    page.classList.remove('active');
                 }
             });
+            // Update tampilan background
+            document.querySelector('.slg-bg').style.filter = pageId === 'home-page' ? 'blur(8px)' : 'blur(0px)';
+        };
 
-            const nextPage = $(pageId);
-            if (nextPage) {
-                // Animasi slide/fade in
-                nextPage.classList.remove('hidden');
-                setTimeout(() => {
-                    nextPage.classList.add('active', 'fade-in');
-                }, 50); // Menunggu sedikit untuk transisi
-            }
-            
-            // Perbarui background untuk halaman yang berbeda
-            const bgElement = $('bg-slg');
-            if (pageId === 'main-page') {
-                bgElement.classList.add('blur-[5px]');
-            } else {
-                bgElement.classList.remove('blur-[5px]');
-            }
-
-            if (pageId === 'level-selection-page') {
-                renderLevelSelection();
-            }
-        }
-        
-        // ==============================================
-        // 3. HALAMAN UTAMA (Data Diri)
-        // ==============================================
-
-        document.addEventListener('DOMContentLoaded', () => {
-            // Inisialisasi Audio State
-            state.isMuted = localStorage.getItem('kediriQuizMuted') === 'true';
-            toggleAudio(); // Panggil toggle untuk mengatur ikon awal
-
-            // Render ulang ikon lucide
-            lucide.createIcons();
-            
-            // Cek Data Pemain
-            const savedPlayer = localStorage.getItem('kediriQuizPlayer');
-            if (savedPlayer) {
-                state.playerName = JSON.parse(savedPlayer).nama;
-                showPage('level-selection-page');
-            } else {
-                showPage('main-page');
-            }
-
-            // Event Listener Form
-            $('player-form').addEventListener('submit', (e) => {
-                e.preventDefault();
-                playSfx('click');
-
-                const nama = $('nama').value.trim();
-                const kelas = $('kelas').value.trim();
-                const sekolah = $('asal_sekolah').value.trim();
-
-                if (!nama || !kelas || !sekolah) {
-                    showNotification("Semua kolom data diri wajib diisi!");
-                    return;
-                }
-
-                // Simpan data pemain
-                const player = { nama, kelas, sekolah };
-                localStorage.setItem('kediriQuizPlayer', JSON.stringify(player));
-                state.playerName = nama;
+        // --- 5. LOKAL STORAGE DAN PROGRESS ---
+        const loadPlayerProgress = () => {
+            const playerInfo = localStorage.getItem('kediriQuizPlayer');
+            if (playerInfo) {
+                const data = JSON.parse(playerInfo);
+                playerName = data.name;
+                document.getElementById('display-name').textContent = data.name;
+                document.getElementById('display-class').textContent = data.class;
+                document.getElementById('display-school').textContent = data.school;
                 
-                showPage('level-selection-page');
-            });
+                document.getElementById('welcome-box').classList.add('hidden');
+                document.getElementById('player-info-display').classList.remove('hidden');
+            } else {
+                 document.getElementById('welcome-box').classList.remove('hidden');
+                 document.getElementById('player-info-display').classList.add('hidden');
+            }
+            
+            playerScores = JSON.parse(localStorage.getItem('kediriQuizScores')) || {};
+        };
+
+        const savePlayerInfo = (name, className, school) => {
+            const playerInfo = { name, class: className, school };
+            localStorage.setItem('kediriQuizPlayer', JSON.stringify(playerInfo));
+            loadPlayerProgress();
+        };
+
+        const saveScore = (level, score) => {
+            playerScores[level] = score;
+            localStorage.setItem('kediriQuizScores', JSON.stringify(playerScores));
+        };
+
+        // --- 6. LOGIC HALAMAN UTAMA (HOME) ---
+        document.getElementById('player-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            playSound('button');
+
+            const name = document.getElementById('player-name').value.trim();
+            const className = document.getElementById('player-class').value.trim();
+            const school = document.getElementById('player-school').value.trim();
+
+            if (name === '' || className === '' || school === '') {
+                document.getElementById('error-message').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('error-message').classList.add('hidden');
+            savePlayerInfo(name, className, school);
+            
+            generateLevelButtons();
+            showPage('level-select-page');
+        });
+
+        document.getElementById('resume-quiz-btn').addEventListener('click', () => {
+             playSound('button');
+             generateLevelButtons();
+             showPage('level-select-page');
+        });
+
+        document.getElementById('change-player-btn').addEventListener('click', () => {
+             playSound('button');
+             localStorage.removeItem('kediriQuizPlayer');
+             localStorage.removeItem('kediriQuizScores');
+             loadPlayerProgress();
         });
 
 
-        // ==============================================
-        // 4. HALAMAN PEMILIHAN LEVEL
-        // ==============================================
-
-        function renderLevelSelection() {
-            const levelList = $('level-list');
-            levelList.innerHTML = '';
+        // --- 7. LOGIC HALAMAN PEMILIHAN LEVEL ---
+        const generateLevelButtons = () => {
+            const grid = document.getElementById('level-grid');
+            grid.innerHTML = '';
             
-            $('player-greeting').textContent = `Selamat datang, ${state.playerName}! Pilih Level untuk memulai Kuis.`;
-
-            // Hitung level tertinggi yang sudah terbuka (minimal skor 60)
-            let highestUnlockedLevel = 1;
-            for (let i = 1; i <= quizData.length; i++) {
-                const score = state.dbScores[i] || 0;
-                if (score >= 60) {
-                    highestUnlockedLevel = i + 1;
-                }
-            }
-
-            quizData.forEach((level, index) => {
-                const levelNumber = index + 1;
-                const isUnlocked = levelNumber <= highestUnlockedLevel;
-                const isCompleted = state.dbScores[levelNumber] >= 60;
-                const score = state.dbScores[levelNumber] || 0;
-
-                let statusText = isCompleted ? `<span class="text-green-300 font-bold">LULUS (${score} Poin)</span>` : `Skor: ${score} Poin`;
-                let statusClass = isCompleted ? 'bg-green-600/20 border-2 border-green-400' : 'bg-gray-700/20';
-
-                if (!isUnlocked) {
-                    statusText = 'Terkunci';
-                    statusClass = 'bg-gray-800/50';
-                }
-
-                const buttonClass = isUnlocked
-                    ? 'bg-kediri-primary hover:bg-blue-900 text-white level-button'
-                    : 'bg-gray-400 text-gray-700 locked-level';
-
+            for (let i = 1; i <= MAX_LEVEL; i++) {
+                const level = i;
+                const theme = quizData[i - 1].theme;
+                const lastLevelScore = playerScores[level - 1] || 0;
+                
+                // Level 1 selalu aktif
+                const isLocked = level > 1 && lastLevelScore < PASSING_SCORE;
+                const scoreDisplay = playerScores[level] !== undefined ? `<span class="text-sm font-bold ml-2">(${playerScores[level]} Poin)</span>` : '';
+                
                 const button = document.createElement('button');
-                button.className = `p-4 text-center rounded-xl shadow-lg transition duration-300 ${buttonClass}`;
+                button.className = `level-btn w-full p-4 text-left shadow-lg ${isLocked ? 'locked' : ''}`;
                 button.innerHTML = `
-                    <div class="text-2xl font-black text-kediri-accent">Level ${levelNumber}</div>
-                    <div class="text-sm font-semibold mt-1">${level.theme}</div>
-                    <div class="mt-2 text-xs p-1 rounded-full ${statusClass}">${statusText}</div>
+                    <div class="text-xl">Level ${level}</div>
+                    <div class="text-sm opacity-80 mt-1">${theme}</div>
+                    ${scoreDisplay}
                 `;
-
-                if (isUnlocked) {
-                    button.addEventListener('click', () => startQuiz(levelNumber));
+                button.disabled = isLocked;
+                
+                if (!isLocked) {
+                    button.addEventListener('click', () => {
+                        playSound('button');
+                        currentLevel = level;
+                        startQuiz(level);
+                    });
                 }
+                
+                grid.appendChild(button);
+            }
+        };
 
-                levelList.appendChild(button);
-            });
-            // Render ulang ikon lucide
-            lucide.createIcons();
-        }
+        // --- 8. LOGIC KUIS ---
+        const startQuiz = (level) => {
+            currentLevel = level;
+            currentQuestionIndex = 0;
+            currentScore = 0;
 
-        // ==============================================
-        // 5. LOGIKA KUIS
-        // ==============================================
-
-        function startQuiz(levelNumber) {
-            playSfx('click');
-            state.currentLevel = levelNumber;
-            state.currentQuestionIndex = 0;
-            state.currentScore = 0;
+            document.getElementById('quiz-score-display').textContent = `Skor: ${currentScore}`;
+            document.getElementById('quiz-level-info').textContent = `Level ${level}: ${quizData[level - 1].theme}`;
+            
             showPage('quiz-page');
-            
-            $('quiz-level-title').textContent = `Level ${levelNumber} - ${quizData[levelNumber - 1].theme}`;
             displayQuestion();
-        }
+        };
+        
+        const displayQuestion = () => {
+            const levelData = quizData[currentLevel - 1];
+            const qData = levelData.questions[currentQuestionIndex];
 
-        function displayQuestion() {
-            const level = quizData[state.currentLevel - 1];
-            const qIndex = state.currentQuestionIndex;
-            const question = level.questions[qIndex];
+            if (!qData) {
+                showResults();
+                return;
+            }
+
+            const questionTextElement = document.getElementById('question-text');
+            const optionsContainer = document.getElementById('options-container');
+
+            // Reset dan animasikan pertanyaan baru
+            questionTextElement.classList.remove('fade-in');
+            void questionTextElement.offsetWidth; // Trigger reflow to restart animation
+            questionTextElement.classList.add('fade-in');
+            questionTextElement.textContent = `Soal ${currentQuestionIndex + 1} dari 5: ${qData.q}`;
+
+            optionsContainer.innerHTML = '';
             
-            $('current-question-number').textContent = qIndex + 1;
-
-            // Animasi Fade Out
-            const qContainer = $('question-container');
-            qContainer.classList.remove('active');
-
-            setTimeout(() => {
-                // Perbarui Konten
-                $('question-text').textContent = question.q;
-                const optionsList = $('options-list');
-                optionsList.innerHTML = '';
-                
-                const optionsMap = { 'A': question.a, 'B': question.b, 'C': question.c, 'D': question.d };
-                const optionKeys = Object.keys(optionsMap);
-
-                optionKeys.forEach(key => {
-                    const button = document.createElement('button');
-                    button.className = 'option-button w-full text-left p-3 md:p-4 bg-gray-100 rounded-lg shadow-sm border border-gray-200 hover:bg-kediri-accent/30 transition duration-200 focus:outline-none';
-                    button.innerHTML = `<span class="font-bold mr-3 text-kediri-primary">${key}.</span> ${optionsMap[key]}`;
-                    button.setAttribute('data-answer', key);
-                    button.onclick = () => handleAnswer(key, question.correct, optionsList);
-                    optionsList.appendChild(button);
-                });
-
-                // Animasi Fade In
-                qContainer.classList.add('active');
-            }, 300); // Durasi fade out
-        }
-
-        function handleAnswer(selectedAnswer, correctAnswer, optionsList) {
-            // Non-aktifkan semua tombol setelah memilih
-            const buttons = optionsList.querySelectorAll('.option-button');
-            buttons.forEach(btn => {
-                btn.onclick = null;
-                btn.classList.add('disabled');
+            // Loop untuk opsi
+            qData.options.forEach((option, index) => {
+                const optionChar = String.fromCharCode(65 + index); // A, B, C, D
+                const optionButton = document.createElement('button');
+                optionButton.className = `w-full text-left p-3 rounded-xl bg-white text-gray-800 shadow-md hover:bg-yellow-100 transition duration-200 ease-in-out font-medium border-l-4 border-blue-500`;
+                optionButton.textContent = `${optionChar}. ${option}`;
+                optionButton.onclick = () => handleAnswer(option, qData.answer);
+                optionsContainer.appendChild(optionButton);
             });
-            
-            let isCorrect = selectedAnswer === correctAnswer;
+        };
 
-            // Tampilkan feedback visual
-            buttons.forEach(btn => {
-                const answerKey = btn.getAttribute('data-answer');
-                btn.classList.remove('hover:bg-kediri-accent/30', 'bg-gray-100');
-                if (answerKey === correctAnswer) {
-                    btn.classList.add('bg-green-500', 'text-white', 'shadow-lg');
-                } else if (answerKey === selectedAnswer) {
-                    btn.classList.add('bg-red-500', 'text-white', 'shadow-lg');
-                } else {
-                    btn.classList.add('bg-gray-200');
+        const handleAnswer = (selectedOption, correctAnswer) => {
+            // Nonaktifkan semua tombol setelah memilih
+            const options = document.querySelectorAll('#options-container button');
+            options.forEach(btn => btn.disabled = true);
+
+            let isCorrect = selectedOption === correctAnswer;
+            let feedbackColor = isCorrect ? 'bg-green-500 border-green-700' : 'bg-red-500 border-red-700';
+
+            // Berikan feedback visual
+            options.forEach(btn => {
+                if (btn.textContent.includes(selectedOption)) {
+                    btn.classList.add(feedbackColor, 'text-white', 'shadow-xl');
+                } else if (btn.textContent.includes(correctAnswer)) {
+                    // Highlight jawaban benar jika jawaban salah
+                    if (!isCorrect) {
+                        btn.classList.add('bg-green-200', 'border-green-500');
+                    }
                 }
             });
 
+            // Update skor dan suara
             if (isCorrect) {
-                state.currentScore += 20;
-                playSfx('correct');
+                currentScore += 20;
+                playSound('correct');
             } else {
-                state.currentScore -= 10;
-                playSfx('wrong');
+                currentScore -= 10;
+                playSound('wrong');
             }
-
-            // Lanjut ke soal berikutnya setelah 1.5 detik
-            setTimeout(() => {
-                state.currentQuestionIndex++;
-                if (state.currentQuestionIndex < 5) {
-                    displayQuestion();
-                } else {
-                    showResult();
-                }
-            }, 1500);
-        }
-
-        // ==============================================
-        // 6. HALAMAN HASIL
-        // ==============================================
-
-        function saveScoreAndUnlock(score, level) {
-            const currentHighestScore = state.dbScores[level] || 0;
-            if (score > currentHighestScore) {
-                state.dbScores[level] = score;
-                localStorage.setItem('kediriQuizScores', JSON.stringify(state.dbScores));
-            }
-        }
-
-        function showResult() {
-            saveScoreAndUnlock(state.currentScore, state.currentLevel);
-            showPage('result-page');
-
-            const score = state.currentScore;
-            const level = state.currentLevel;
-            const isPassed = score >= 60;
-
-            $('final-score').textContent = score;
             
-            const resultMessage = $('result-message');
-            const resultEmoji = $('result-emoji');
-            const nextLevelBtn = $('next-level-button');
-            const retryLevelBtn = $('retry-level-button');
+            document.getElementById('quiz-score-display').textContent = `Skor: ${currentScore}`;
 
-            if (isPassed) {
-                resultMessage.textContent = `SELAMAT! Anda LULUS Level ${level} dengan skor luar biasa!`;
-                resultMessage.classList.replace('text-red-600', 'text-green-600');
-                resultEmoji.textContent = '🎉';
+            // Lanjut ke soal berikutnya setelah jeda
+            setTimeout(() => {
+                currentQuestionIndex++;
+                displayQuestion();
+            }, 1000);
+        };
+
+        // --- 9. LOGIC HALAMAN HASIL ---
+        const showResults = () => {
+            saveScore(currentLevel, currentScore); // Simpan skor
+            
+            const titleEl = document.getElementById('result-title');
+            const scoreEl = document.getElementById('final-score');
+            const messageEl = document.getElementById('result-message');
+            const nextBtn = document.getElementById('next-level-btn');
+            const tryAgainBtn = document.getElementById('try-again-btn');
+            
+            titleEl.textContent = `Hasil Kuis Level ${currentLevel}`;
+            scoreEl.textContent = currentScore;
+            
+            nextBtn.classList.add('hidden');
+            tryAgainBtn.classList.add('hidden');
+            messageEl.classList.remove('text-green-600', 'text-red-600');
+
+            if (currentScore >= PASSING_SCORE) {
+                messageEl.textContent = "Selamat! Anda Lolos dan Level Berikutnya Terbuka!";
+                messageEl.classList.add('text-green-600');
                 
-                // Cek apakah ini level terakhir
-                if (level < quizData.length) {
-                    nextLevelBtn.classList.remove('hidden');
-                    nextLevelBtn.onclick = () => startQuiz(level + 1);
-                    showNotification(`Level ${level + 1} kini telah terbuka!`, false);
+                // Cek apakah ada level berikutnya
+                if (currentLevel < MAX_LEVEL) {
+                    nextBtn.classList.remove('hidden');
+                    nextBtn.textContent = `Lanjut ke Level ${currentLevel + 1}`;
                 } else {
-                    nextLevelBtn.classList.add('hidden');
-                    resultMessage.textContent = `HEBAT! Anda telah menyelesaikan semua Level Kuis Kediri Raya!`;
-                    resultEmoji.textContent = '👑';
+                    messageEl.textContent = "Luar Biasa! Anda telah menyelesaikan SEMUA level Kuis Kediri Raya!";
                 }
-                retryLevelBtn.classList.add('hidden');
+
             } else {
-                resultMessage.textContent = `Maaf, Anda GAGAL di Level ${level}. Coba lagi untuk membuka level berikutnya!`;
-                resultMessage.classList.replace('text-green-600', 'text-red-600');
-                resultEmoji.textContent = '😔';
-                nextLevelBtn.classList.add('hidden');
-                retryLevelBtn.classList.remove('hidden');
-                retryLevelBtn.onclick = () => startQuiz(level);
+                messageEl.textContent = "Maaf, Anda belum mencapai batas skor minimal. Coba lagi!";
+                messageEl.classList.add('text-red-600');
+                tryAgainBtn.classList.remove('hidden');
             }
 
-            $('back-to-level-selection').onclick = () => showPage('level-selection-page');
-        }
+            showPage('result-page');
+        };
 
-        // ==============================================
-        // 7. INISIALISASI DAN MUTE/UNMUTE
-        // ==============================================
-        $('audio-toggle').addEventListener('click', toggleAudio);
+        // --- 10. EVENT LISTENERS HASIL ---
+        document.getElementById('next-level-btn').addEventListener('click', () => {
+            playSound('button');
+            currentLevel++; // Otomatis pindah ke level berikutnya
+            startQuiz(currentLevel);
+        });
 
+        document.getElementById('try-again-btn').addEventListener('click', () => {
+            playSound('button');
+            startQuiz(currentLevel); // Coba level yang sama
+        });
+
+        document.getElementById('back-to-menu-btn').addEventListener('click', () => {
+            playSound('button');
+            generateLevelButtons();
+            showPage('level-select-page');
+        });
+
+        // --- 11. INISIALISASI DAN MUTE/UNMUTE ---
+        document.getElementById('mute-btn').addEventListener('click', () => {
+            isMuted = !isMuted;
+            const icon = document.getElementById('mute-btn').querySelector('svg path');
+            if (isMuted) {
+                // Ganti ikon menjadi muted (x mark)
+                 icon.setAttribute('d', 'M6 18L18 6M6 6l12 12');
+            } else {
+                // Ganti ikon menjadi speaker
+                icon.setAttribute('d', 'M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H3a1 1 0 01-1-1V9a1 1 0 011-1h2.586l7-7h1a1 1 0 011 1v12a1 1 0 01-1 1h-1l-7-7z');
+            }
+        });
+
+        // Inisialisasi aplikasi saat DOM siap
+        window.onload = function() {
+            // Inisialisasi Tone.js (memerlukan interaksi pengguna pertama)
+            const body = document.querySelector('body');
+            body.addEventListener('click', () => {
+                if (Tone.context.state !== 'running') {
+                    Tone.start();
+                    initAudio(); // Inisialisasi audio setelah interaksi pertama
+                }
+            }, { once: true });
+
+            loadPlayerProgress();
+            showPage('home-page');
+        };
     </script>
 </body>
 </html>
