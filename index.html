@@ -85,6 +85,34 @@
     </div>
 
     <div id="result-view" class="view-container flex-col items-center justify-center bg-gray-100 z-10 p-4 sm:p-8">
+        </div>
+    <div id="special-result-view" class="view-container flex-col items-center justify-center bg-gray-900 z-10 p-4 sm:p-8 relative overflow-hidden">
+        <div id="confetti-layer" class="absolute inset-0 z-0"></div>
+
+        <div class="w-full max-w-lg p-10 bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl text-center z-10 animate-scale-in">
+            <h2 id="special-result-title" class="text-5xl font-extrabold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600 drop-shadow-lg">
+                🎉 LUAR BIASA! 🎉
+            </h2>
+            <p class="text-xl text-gray-700 mb-6">Anda telah masuk Top 3 Skor Kumulatif Kediri Raya!</p>
+
+            <div id="badge-display" class="my-8">
+                </div>
+
+            <div class="p-4 bg-yellow-50 rounded-xl mb-8">
+                <p class="text-lg font-bold text-gray-800">Skor Kumulatif Anda:</p>
+                <p id="total-cumulative-score" class="text-4xl font-extrabold text-yellow-700 mt-1"></p>
+            </div>
+
+            <div id="special-actions" class="space-y-4">
+                <button class="modern-btn w-full" onclick="showView('level-select')">
+                    Kembali ke Menu Level
+                </button>
+                <button class="w-full text-sm text-red-500 hover:text-red-700 transition" onclick="resetAllDataConfirmation()">
+                    Reset Data dan Skor
+                </button>
+            </div>
+        </div>
+    </div>
         <div class="w-full max-w-md p-10 bg-white rounded-3xl shadow-2xl text-center">
             <h2 class="text-4xl font-extrabold mb-4 text-gray-800">Hasil Kuis Level <span id="result-level-num"></span></h2>
             <p class="text-lg text-gray-600 mb-6">Selamat, <span id="result-player-name" class="font-semibold"></span>!</p>
