@@ -1,0 +1,133 @@
+/* Custom Styles for Kediri Theme and Animations */
+:root {
+    --color-primary: #003366; /* Deep Blue, like the river or night sky */
+    --color-secondary: #FFD700; /* Gold/Yellow, symbolizing prosperity */
+    --color-success: #10B981; /* Green for success */
+    --color-error: #EF4444; /* Red for error */
+    --glow-shadow: 0 0 10px rgba(255, 215, 0, 0.6), 0 0 20px rgba(255, 215, 0, 0.4);
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--color-primary);
+    overflow: hidden; /* Prevent body scroll when views are toggled */
+}
+
+/* Full Screen View Containers */
+.view-container {
+    min-height: 100vh;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+    padding: 1rem;
+}
+
+.view-container.active {
+    display: flex;
+    opacity: 1;
+}
+
+/* Home Page Background (Simpang Lima Gumul - SLG) */
+#home-view {
+    background-image: url('https://placehold.co/1920x1080/003366/FFFFFF?text=Simpang+Lima+Gumul');
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+/* Soft Blur Overlay */
+#home-view::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    backdrop-filter: blur(8px);
+    background-color: rgba(0, 0, 0, 0.5); /* Dark overlay for better text contrast */
+}
+
+/* Modern Button Styles */
+.modern-btn {
+    background-color: var(--color-secondary);
+    color: var(--color-primary);
+    font-weight: 700;
+    padding: 0.75rem 2rem;
+    border-radius: 9999px;
+    box-shadow: 0 4px 15px rgba(0, 51, 102, 0.3);
+    transition: all 0.3s ease;
+}
+
+.modern-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255, 215, 0, 0.5);
+}
+
+.modern-btn:disabled {
+    background-color: #A0AEC0;
+    color: #4A5568;
+    cursor: not-allowed;
+    opacity: 0.7;
+    box-shadow: none;
+}
+
+/* Level Button Specific Styles */
+.level-btn-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: 2rem 2rem 0.5rem 0.5rem; /* Oval depan bawah effect */
+    transform: skew(-5deg); /* Slight skew for dynamic look */
+    transition: all 0.3s ease;
+}
+
+.level-btn-container:hover:not(.locked) {
+    transform: scale(1.03) skew(-5deg);
+}
+
+.level-btn {
+    width: 100%;
+    padding: 1.5rem 1rem;
+    font-size: 1.25rem;
+    text-align: left;
+    background-color: var(--color-primary);
+    color: var(--color-secondary);
+    border: 2px solid var(--color-secondary);
+    transition: all 0.3s ease;
+    transform: skew(5deg); /* Counter-skew the text */
+}
+
+.level-btn:hover:not(:disabled) {
+    background-color: var(--color-secondary);
+    color: var(--color-primary);
+    text-shadow: 0 0 5px rgba(0, 51, 102, 0.5);
+    box-shadow: var(--glow-shadow);
+}
+
+.level-btn-container.locked {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* Quiz Question Animation */
+.question-card {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInSlide 0.5s forwards;
+}
+
+@keyframes fadeInSlide {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+/* Animation for Wrong Answer Feedback */
+@keyframes shake {
+  0%, 100% {transform: translateX(0);}
+  10%, 30%, 50%, 70%, 90% {transform: translateX(-10px);}
+  20%, 40%, 60%, 80% {transform: translateX(10px);}
+}
+
+.animate-shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
