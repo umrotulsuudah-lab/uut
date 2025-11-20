@@ -1,11 +1,8 @@
-// --- KONFIGURASI DAN DATA KUIS (TIDAK BERUBAH) ---
-
 const VIEWS = {
     HOME: 'home',
     LEVEL_SELECT: 'level-select',
     QUIZ: 'quiz',
-    RESULT: 'result',
-    SPECIAL_RESULT: 'special-result' // BARU: Tampilan Spesial Top 3
+    RESULT: 'result'
 };
 
 const QUIZ_SETTINGS = {
@@ -27,11 +24,11 @@ document.getElementById('mute-btn').addEventListener('click', () => {
     if (isMuted) {
         bgMusic.pause();
         // Mute icon
-        icon.innerHTML = `<path d="M14.5 13.5l2-2 1-1-2-2-1 1-2 2-1-1-2-2 1-1-2-2-1 1-2 2 1 1-2 2 1 1 2-2 1-1-2-2 1-1-2 2-1 1zm-4-4l-1 1 2 2-1 1-2 2 1 1 2-2 1-1-2-2 1-1 2-2-1-1-2 2z"/>`;
+        icon.innerHTML = `<path d="M14.5 13.5l2-2 1-1-2-2-1 1-2 2-1-1-2-2 1-1-2-2-1 1-2 2 1 1-2 2 1 1 2-2 1-1-2-2 1-1-2 2-1 1zm-4-4l-1 1 2 2-1 1-2 2 1 1 2-2 1-1-2-2 1-1 2-2-1-1-2 2z"/>`; 
     } else {
         bgMusic.play().catch(e => console.error("Error playing music:", e));
         // Unmute icon
-        icon.innerHTML = `<path d="M3 10v4h3l5 5V5L6 10H3zm13.5 3c0-1.77-1-3.29-2.5-4.03v8.05c1.5-.76 2.5-2.28 2.5-4.02zM14 5v2.02c2.78.72 5 3.39 5 6.98s-2.22 6.26-5 6.98V19c3.86-.71 7-4.14 7-8s-3.14-7.29-7-8z"/>`;
+        icon.innerHTML = `<path d="M3 10v4h3l5 5V5L6 10H3zm13.5 3c0-1.77-1-3.29-2.5-4.03v8.05c1.5-.76 2.5-2.28 2.5-4.02zM14 5v2.02c2.78.72 5 3.39 5 6.98s-2.22 6.26-5 6.98V19c3.86-.71 7-4.14 7-8s-3.14-7.29-7-8z"/>`; 
     }
 });
 
@@ -46,9 +43,6 @@ const playSound = (type) => {
             break;
         case 'wrong':
             synth.triggerAttackRelease(["C3", "C#3"], "8n");
-            break;
-        case 'win_special': // BARU
-            synth.triggerAttackRelease(["C5", "E5", "G5", "C6"], "2n");
             break;
     }
 };
@@ -156,31 +150,47 @@ const quizData = [
         ]
     }
 ];
-// --- STATE KUIS ---
+
 let currentLevel = 1;
 let currentQuestionIndex = 0;
 let currentScore = 0;
 let player = {};
 
-// --- DATA MANAGEMENT & LEADERBOARD (BARU) ---
-
-const loadLeaderboard = () => {
-    const storedLeaderboard = localStorage.getItem('kediriQuizLeaderboard');
-    // Leaderboard disimpan sebagai array objek: [{name: '...', score: 1000, ...}]
-    return storedLeaderboard ? JSON.parse(storedLeaderboard) : [];
-};
-
-const saveLeaderboard = (leaderboard) => {
-    localStorage.setItem('kediriQuizLeaderboard', JSON.stringify(leaderboard));
-};
-
-const calculateCumulativeScore = (scores) => {
-    // Menghitung total skor dari semua level yang telah disimpan
-    return Object.values(scores).reduce((total, score) => total + score, 0);
-};
+// --- Utility Functions ---
 
 /**
- * Load player data and scores from localStorage. (Diperbarui)
+ * Toggles the visibility of the specified view and applies fade animation.
+ * @param {string} viewName - The name of the view (e.g., 'home', 'level-select').
+ */
+const showView = (viewName) => {
+    playSound('click');
+    const allViews = document.querySelectorAll('.view-container');
+    allViews.forEach(view => {
+        view.classList.remove('active');
+        view.style.display = 'none'; // Ensure it is display:none
+    });
+
+    const targetView = document.getElementById(`${viewName}-view`);
+    if (targetView) {
+        targetView.style.display = 'flex'; // Set display before adding 'active'
+        setTimeout(() => {
+            targetView.classList.add('active');
+        }, 10); // Short delay to trigger transition
+    }
+
+    // Specific actions when switching views
+    if (viewName === VIEWS.LEVEL_SELECT) {
+        renderLevelSelection();
+    } else if (viewName === VIEWS.QUIZ) {
+        // Quiz logic handled in startQuiz()
+    }
+};
+// Attach showView globally for inline HTML click events
+window.showView = showView; 
+
+
+/**
+ * Load player data and scores from localStorage.
  */
 const loadPlayerData = () => {
     const storedPlayer = localStorage.getItem('kediriQuizPlayer');
@@ -188,7 +198,11 @@ const loadPlayerData = () => {
     if (storedPlayer) {
         player = JSON.parse(storedPlayer);
     }
-    return storedScores ? JSON.parse(storedScores) : {};
+    if (storedScores) {
+        // Scores are an object mapping level number to score, e.g., {1: 100, 2: 80}
+        return JSON.parse(storedScores);
+    }
+    return {};
 };
 
 /**
@@ -199,47 +213,7 @@ const saveScores = (scores) => {
     localStorage.setItem('kediriQuizScores', JSON.stringify(scores));
 };
 
-// --- Utility Functions ---
-
-/**
- * Toggles the visibility of the specified view and applies fade animation.
- * FIX: Memastikan transisi berjalan mulus
- */
-const showView = (viewName) => {
-    playSound('click');
-    const allViews = document.querySelectorAll('.view-container');
-    
-    // 1. Fade-out semua view aktif
-    allViews.forEach(view => {
-        view.classList.remove('active');
-        if (view.style.display !== 'none') {
-             setTimeout(() => {
-                view.style.display = 'none'; 
-            }, 500); // Tunggu hingga transisi opacity (0.5s) selesai
-        }
-    });
-
-    const targetView = document.getElementById(`${viewName}-view`);
-    if (targetView) {
-        // 2. Set display:flex agar elemen bisa dilihat
-        targetView.style.display = 'flex'; 
-        
-        // 3. Jeda singkat (50ms) sebelum fade-in
-        setTimeout(() => {
-            targetView.classList.add('active');
-        }, 50); 
-    }
-
-    // Panggil fungsi render spesifik setelah tampilan berubah
-    if (viewName === VIEWS.LEVEL_SELECT) {
-        // Beri waktu lebih lama agar transisi selesai sebelum rendering
-        setTimeout(renderLevelSelection, 600); 
-    }
-};
-// Attach showView globally for inline HTML click events
-window.showView = showView; 
-
-// --- 1. Halaman Utama Logic (SAMA) ---
+// --- 1. Halaman Utama Logic ---
 
 document.getElementById('player-form').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -265,7 +239,7 @@ document.getElementById('player-form').addEventListener('submit', (e) => {
     }
 });
 
-// --- 2. Halaman Pemilihan Level Logic (SAMA) ---
+// --- 2. Halaman Pemilihan Level Logic ---
 
 /**
  * Determines if a level is unlocked.
@@ -294,8 +268,6 @@ const renderLevelSelection = () => {
         const isLocked = !isLevelUnlocked(data.level, scores);
         const currentScore = scores[data.level] || 0;
 
-        const lockIcon = isLocked ? `<i class="fas fa-lock text-white/50 ml-2"></i>` : ''; // Ikon Kunci (Membutuhkan Font Awesome)
-
         const levelButtonHTML = `
             <div class="level-btn-container ${isLocked ? 'locked' : ''}" data-level="${data.level}">
                 <button class="level-btn flex justify-between items-center" ${isLocked ? 'disabled' : ''} onclick="startQuiz(${data.level})">
@@ -305,7 +277,7 @@ const renderLevelSelection = () => {
                     </div>
                     <div class="text-right">
                         <span class="text-sm font-light text-gray-300">Skor Tertinggi:</span>
-                        <span class="text-lg font-extrabold text-${currentScore >= QUIZ_SETTINGS.PASS_SCORE ? 'yellow-300' : 'red-300'}">${currentScore} Poin ${lockIcon}</span>
+                        <span class="text-lg font-extrabold text-${currentScore >= QUIZ_SETTINGS.PASS_SCORE ? 'yellow-300' : 'red-300'}">${currentScore} Poin</span>
                     </div>
                 </button>
             </div>
@@ -314,7 +286,7 @@ const renderLevelSelection = () => {
     });
 };
 
-// --- 3. Halaman Kuis Logic (SAMA) ---
+// --- 3. Halaman Kuis Logic ---
 
 /**
  * Starts the quiz for a given level.
@@ -327,9 +299,6 @@ const startQuiz = (level) => {
     document.getElementById('quiz-level-title').textContent = `Kuis Level ${level}: ${quizData[level - 1].theme}`;
     document.getElementById('current-quiz-score').textContent = currentScore;
     
-    // Opsional: Acak urutan pertanyaan setiap kali kuis dimulai
-    // quizData[level - 1].questions.sort(() => Math.random() - 0.5); 
-
     showQuestion(0);
     showView(VIEWS.QUIZ);
 };
@@ -337,7 +306,7 @@ const startQuiz = (level) => {
 window.startQuiz = startQuiz;
 
 /**
- * Displays the current question. (SAMA)
+ * Displays the current question.
  * @param {number} index - The index of the question in the current level's array.
  */
 const showQuestion = (index) => {
@@ -382,7 +351,7 @@ const showQuestion = (index) => {
 };
 
 /**
- * Checks the user's answer, updates score, and shows feedback. (SAMA)
+ * Checks the user's answer, updates score, and shows feedback.
  * @param {HTMLElement} selectedButton - The button clicked by the user.
  * @param {string} correctAnswer - The correct answer string.
  */
@@ -443,36 +412,12 @@ const checkAnswer = (selectedButton, correctAnswer) => {
 // Attach checkAnswer globally for inline HTML click events
 window.checkAnswer = checkAnswer;
 
-// --- 4. Halaman Hasil Logic (MODIFIED) ---
+// --- 4. Halaman Hasil Logic ---
 
 /**
  * Displays the quiz results and updates score/lock status.
  */
 const showResult = () => {
-    const scores = loadPlayerData();
-    const highestScore = scores[currentLevel] || 0;
-    
-    // 1. Simpan skor level saat ini (jika lebih tinggi)
-    if (currentScore > highestScore) {
-        scores[currentLevel] = currentScore;
-        saveScores(scores);
-    }
-
-    const passed = currentScore >= QUIZ_SETTINGS.PASS_SCORE;
-    
-    // 2. Cek apakah ini level terakhir (Level 10) DAN pemain lulus
-    const isLastLevel = currentLevel === quizData.length;
-    // Cek apakah semua level sudah ada skornya (untuk memastikan kumulatif skor valid)
-    const allLevelsPlayed = Object.keys(scores).length === quizData.length;
-    
-    if (isLastLevel && passed && allLevelsPlayed) {
-        // Jika Level 10 LULUS, hitung skor kumulatif dan cek Top 3
-        const cumulativeScore = calculateCumulativeScore(scores);
-        checkAndShowSpecialResult(cumulativeScore);
-        return; // Hentikan dan tampilkan hasil spesial
-    }
-
-    // 3. Tampilkan hasil normal (untuk level 1 hingga 9 atau Level 10 tapi tidak lulus)
     showView(VIEWS.RESULT);
     
     const resultLevelNum = document.getElementById('result-level-num');
@@ -487,6 +432,16 @@ const showResult = () => {
     finalScoreEl.textContent = `${currentScore} Poin`;
     resultActions.innerHTML = '';
     
+    // Load existing scores and update the current level's score if it's higher
+    const scores = loadPlayerData();
+    const highestScore = scores[currentLevel] || 0;
+    
+    if (currentScore > highestScore) {
+        scores[currentLevel] = currentScore;
+        saveScores(scores);
+    }
+
+    const passed = currentScore >= QUIZ_SETTINGS.PASS_SCORE;
     finalScoreEl.style.color = passed ? 'var(--color-success)' : 'var(--color-error)';
     scoreDisplay.classList.toggle('bg-green-100', passed);
     scoreDisplay.classList.toggle('bg-red-100', !passed);
@@ -495,6 +450,7 @@ const showResult = () => {
         resultMessageEl.textContent = "Selamat! Anda LULUS dan membuka level berikutnya!";
         
         const nextLevel = currentLevel + 1;
+        // Only show "Lanjut" button if it's not the final level
         if (nextLevel <= quizData.length) {
             const continueBtn = `
                 <button class="modern-btn w-full" onclick="showView('${VIEWS.LEVEL_SELECT}')">
@@ -526,120 +482,22 @@ const showResult = () => {
     resultActions.insertAdjacentHTML('beforeend', backBtn);
 };
 
-// --- LOGIC HASIL SPESIAL (TOP 3) (BARU) ---
-
-/**
- * Memeriksa skor kumulatif pemain dan menampilkan hasil spesial jika masuk Top 3.
- */
-const checkAndShowSpecialResult = (cumulativeScore) => {
-    let leaderboard = loadLeaderboard();
-    const newEntry = { 
-        name: player.name, 
-        score: cumulativeScore, 
-        class: player.class, 
-        school: player.school 
-    };
-
-    // Menggunakan kombinasi nama, kelas, dan sekolah sebagai identifier unik
-    const playerIdentifier = `${player.name}-${player.class}-${player.school}`;
-    const playerIndex = leaderboard.findIndex(entry => 
-        `${entry.name}-${entry.class}-${entry.school}` === playerIdentifier
-    );
-    
-    if (playerIndex !== -1) {
-        // Jika pemain sudah ada, update skor jika yang baru lebih tinggi
-        if (newEntry.score > leaderboard[playerIndex].score) {
-            leaderboard[playerIndex].score = newEntry.score;
-        }
-    } else {
-        leaderboard.push(newEntry);
-    }
-    
-    // Sortir dan potong (Top 10)
-    leaderboard.sort((a, b) => b.score - a.score);
-    leaderboard = leaderboard.slice(0, 10);
-    saveLeaderboard(leaderboard);
-    
-    // Cek peringkat pemain saat ini
-    const finalRank = leaderboard.findIndex(entry => 
-        `${entry.name}-${entry.class}-${entry.school}` === playerIdentifier && entry.score === newEntry.score
-    ) + 1;
-
-    if (finalRank > 0 && finalRank <= 3) {
-        // Masuk Top 3!
-        showSpecialResult(finalRank, newEntry.score);
-    } else {
-        // Tidak masuk Top 3, kembali ke menu level dengan pesan
-        showView(VIEWS.LEVEL_SELECT);
-        alert(`Selamat, ${player.name}!\nSkor Kumulatif Anda: ${newEntry.score} Poin.\nAnda berada di peringkat #${finalRank} Leaderboard.`);
-    }
-};
-
-/**
- * Menampilkan tampilan spesial untuk Top 3.
- */
-const showSpecialResult = (rank, score) => {
-    showView(VIEWS.SPECIAL_RESULT);
-    playSound('win_special'); // Panggil suara spesial
-
-    const badgeDisplay = document.getElementById('badge-display');
-    const totalScoreEl = document.getElementById('total-cumulative-score');
-    const titleEl = document.getElementById('special-result-title');
-    const confettiEl = document.getElementById('confetti-layer'); // Asumsi ada elemen di HTML
-    
-    totalScoreEl.textContent = `${score} Poin`;
-    badgeDisplay.innerHTML = ''; 
-
-    let badgeClass = '';
-    let rankText = '';
-    
-    if (rank === 1) {
-        badgeClass = 'badge-gold';
-        rankText = 'PERINGKAT EMAS';
-        // Animasi kembang api/sparkle bisa diatur di CSS berdasarkan kelas atau properti elemen
-    } else if (rank === 2) {
-        badgeClass = 'badge-silver';
-        rankText = 'PERINGKAT PERAK';
-    } else if (rank === 3) {
-        badgeClass = 'badge-bronze';
-        rankText = 'PERINGKAT PERUNGGU';
-    }
-    
-    titleEl.innerHTML = `🎉 ${rankText}! 🎉`;
-    
-    const badgeHTML = `<div class="badge ${badgeClass}">#${rank}</div>`;
-    badgeDisplay.insertAdjacentHTML('beforeend', badgeHTML);
-};
-
-/**
- * Konfirmasi reset data. (BARU)
- */
-const resetAllDataConfirmation = () => {
-    const confirmed = confirm("ANDA YAKIN INGIN MENGHAPUS SEMUA DATA KUIS (Skor Level, Data Pemain, dan Leaderboard)? Tindakan ini tidak dapat dibatalkan.");
-    if (confirmed) {
-        localStorage.removeItem('kediriQuizPlayer');
-        localStorage.removeItem('kediriQuizScores');
-        localStorage.removeItem('kediriQuizLeaderboard');
-        alert("Semua data kuis telah dihapus!");
-        showView(VIEWS.HOME);
-        window.location.reload(); 
-    }
-};
-window.resetAllDataConfirmation = resetAllDataConfirmation;
-
-// --- Initialization (SAMA) ---
+// --- Initialization ---
 window.onload = () => {
     // Check for existing player data
-    const scores = loadPlayerData();
-    if (player.name) {
-        // Jika pemain sudah ada, langsung ke menu level (setelah loading)
+    const storedPlayer = localStorage.getItem('kediriQuizPlayer');
+    if (storedPlayer) {
+        player = JSON.parse(storedPlayer);
+        document.getElementById('player-name').value = player.name || '';
+        document.getElementById('player-class').value = player.class || '';
+        document.getElementById('player-school').value = player.school || '';
+        
         setTimeout(() => {
-            showView(VIEWS.LEVEL_SELECT);
             bgMusic.volume = 0.4;
             bgMusic.play().catch(e => console.log("Music auto-play blocked."));
         }, 500);
-    } else {
-        // Initial view is HOME
-        showView(VIEWS.HOME);
     }
+    
+    // Initial view is HOME
+    showView(VIEWS.HOME);
 };
