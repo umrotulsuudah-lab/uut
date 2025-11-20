@@ -29,16 +29,14 @@ body {
 
 /* Home Page Background (Simpang Lima Gumul - SLG) */
 #home-view {
-    /* Ganti URL gambar di bawah dengan URL gambar Monumen-Simpang-Lima-Gumul.jpg Anda */
-    background-image: url('https://placehold.co/1920x1080/003366/FFFFFF?text=Monumen+Simpang+Lima+Gumul'); 
+    /* Ganti URL gambar di sini */
+    background-image: url('Monumen-Simpang-Lima-Gumul.jpg');
     background-size: cover;
     background-position: center;
     position: relative;
-    /* Menambahkan filter hue-rotate dan saturate untuk nuansa gold */
-    filter: hue-rotate(30deg) saturate(1.5); 
 }
 
-/* Soft Blur Overlay */
+/* Soft blur overlay with gold tint */
 #home-view::before {
     content: '';
     position: absolute;
@@ -47,7 +45,8 @@ body {
     right: 0;
     bottom: 0;
     backdrop-filter: blur(5px); /* Sedikit mengurangi blur agar gambar lebih terlihat */
-    background-color: rgba(184, 134, 11, 0.4); /* Overlay berwarna gold kecoklatan */
+    background-color: rgba(255, 215, 0, 0.2); /* Sentuhan warna gold */
+    box-shadow: inset 0 0 100px rgba(255, 215, 0, 0.3); /* Kilauan emas di dalam overlay */
 }
 
 /* Modern Button Styles */
@@ -112,25 +111,4 @@ body {
 }
 
 /* Quiz Question Animation */
-.question-card {
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fadeInSlide 0.5s forwards;
-}
-
-@keyframes fadeInSlide {
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-/* Animation for Wrong Answer Feedback */
-@keyframes shake {
-  0%, 100% {transform: translateX(0);}
-  10%, 30%, 50%, 70%, 90% {transform: translateX(-10px);}
-  20%, 40%, 60%, 80% {transform: translateX(10px);}
-}
-
-.animate-shake {
-    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
-}
+.question
