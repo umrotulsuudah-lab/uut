@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kediri Raya Quiz - Kuis Budaya Lokal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js"></script>
+    
+    <style>
+        /* Variabel Warna Kustom */
+        :root {
+            --color-primary: #f59e0b; /* Yellow 500 */
+            --color-secondary: #059669; /* Emerald 600 */
+            --color-success: #10b981; /* Green 500 */
+            --color-error: #ef4444; /* Red 500 */
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #1f2937; /* Dark Gray background */
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Container View Dasar */
+        .view-container {
+            width: 100%;
+            min-height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transform: scale(0.98);
+            pointer-events: none;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            display: none; /* Default hidden */
+        }
+
+        .view-container.active {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: all;
+            display: flex; 
+        }
+
+        /* --- Global Styles --- */
+
+        .modern-btn {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: bold;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-bottom: 3px solid #b45309; /* Darker shade for depth */
+        }
+        
+        .modern-btn:hover {
+            background-color: #fbbf24; /* Yellow 400 */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* --- Level Select Styles --- */
+
+        .level-btn-container {
+            opacity: 1;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .level-btn {
+            background-color: #374151; /* Darker Gray */
+            color: white;
+            padding: 1.2rem 1.5rem;
+            border-radius: 1rem;
+            width: 100%;
+            text-align: left;
+            border: 2px solid var(--color-primary);
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .level-btn:not([disabled]):hover {
+            background-color: #4b5563; /* Even darker on hover */
+            transform: scale(1.02);
+        }
+
+        .level-btn-container.locked {
+            filter: grayscale(80%);
+            opacity: 0.6;
+        }
+
+        .level-btn-container.locked .level-btn {
+            cursor: not-allowed;
+            background-color: #1f2937;
+            border-color: #4b5563;
+        }
+
+        /* --- Quiz Styles --- */
+
+        #question-container {
+            min-height: 300px; /* Jaga agar tinggi tidak berubah saat transisi */
+            transition: opacity 0.3s ease;
+        }
+
+        .option-btn:disabled {
+            cursor: default;
+        }
+
+        /* Animasi Feedback */
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-30px); }
+            60% { transform: translateY(-15px); }
+        }
+
+        .animate-bounce {
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        }
+        
+        .animate-shake {
+            animation: shake 0.5s;
+        }
+
+        /* --- Special Result Styles (NEW) --- */
+
+        .animate-scale-in {
+            animation: scaleIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* Badge Styles */
+        .badge {
+            display: inline-block;
+            padding: 1rem 2rem;
+            border-radius: 9999px;
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin: 0.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            transform: rotate(-5deg) scale(1.1);
+            transition: all 0.3s;
+        }
+
+        .badge-gold {
+            background: linear-gradient(145deg, #FFD700, #F7C600);
+            color: #4B3A00;
+            border: 5px solid #FFF3B3;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4);
+        }
+
+        .badge-silver {
+            background: linear-gradient(145deg, #C0C0C0, #A0A0A0);
+            color: #333;
+            border: 5px solid #E0E0E0;
+            text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.5);
+        }
+
+        .badge-bronze {
+            background: linear-gradient(145deg, #CD7F32, #B86B27);
+            color: #FFF;
+            border: 5px solid #E6BF93;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Simple Golden Sparkle/Confetti Layer */
+        #confetti-layer {
+            pointer-events: none;
+            background: 
+                radial-gradient(circle at 10% 10%, rgba(255, 215, 0, 0.5) 2px, transparent 3px),
+                radial-gradient(circle at 90% 90%, rgba(255, 215, 0, 0.5) 2px, transparent 3px),
+                radial-gradient(circle at 50% 50%, rgba(255, 215, 0, 0.5) 2px, transparent 3px);
+            background-size: 200% 200%;
+            animation: sparkleMove 10s infinite alternate;
+        }
+
+        @keyframes sparkleMove {
+            from { background-position: 0% 0%; }
+            to { background-position: 100% 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <button id="mute-btn" class="fixed top-4 right-4 z-50 p-2 bg-gray-700 rounded-full shadow-lg text-white hover:bg-gray-600 transition">
+        <svg id="audio-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 10v4h3l5 5V5L6 10H3zm13.5 3c0-1.77-1-3.29-2.5-4.03v8.05c1.5-.76 2.5-2.28 2.5-4.02zM14 5v2.02c2.78.72 5 3.39 5 6.98s-2.22 6.26-5 6.98V19c3.86-.71 7-4.14 7-8s-3.14-7.29-7-8z"/>
+        </svg>
+    </button>
+    <audio id="background-music" loop volume="0.4" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
+
+
+    <div id="home-view" class="view-container flex-col items-center justify-center bg-gray-900 z-50 p-4 sm:p-8">
+        <div class="w-full max-w-md p-8 bg-white rounded-xl shadow-2xl text-center">
+            <h1 class="text-4xl font-extrabold text-yellow-600 mb-2">Kediri Raya Quiz 👑</h1>
+            <p class="text-gray-500 mb-8">Uji Pengetahuanmu tentang Kota Tahu dan Sejarah Kerajaannya.</p>
+
+            <form id="player-form" class="space-y-4">
+                <div>
+                    <input type="text" id="player-name" placeholder="Nama Lengkap" class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-yellow-500 focus:ring focus:ring-yellow-200" required>
+                    <p id="name-error" class="text-red-500 text-sm mt-1 hidden">Nama wajib diisi.</p>
+                </div>
+                <div>
+                    <input type="text" id="player-class" placeholder="Kelas / Jurusan" class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-yellow-500 focus:ring focus:ring-yellow-200" required>
+                    <p id="class-error" class="text-red-500 text-sm mt-1 hidden">Kelas wajib diisi.</p>
+                </div>
+                <div>
+                    <input type="text" id="player-school" placeholder="Nama Sekolah / Institusi" class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-yellow-500 focus:ring focus:ring-yellow-200" required>
+                    <p id="school-error" class="text-red-500 text-sm mt-1 hidden">Sekolah wajib diisi.</p>
+                </div>
+                
+                <button type="submit" class="modern-btn w-full text-xl mt-6">
+                    Mulai Belajar & Bermain!
+                </button>
+            </form>
+            <button class="w-full text-xs mt-4 text-gray-400 hover:text-red-500 transition" onclick="resetAllDataConfirmation()">
+                Reset Data Pemain dan Skor
+            </button>
+        </div>
+    </div>
+    
+    <div id="material-view" class="view-container flex-col items-center justify-start bg-gray-100 p-4 sm:p-8 z-40 overflow-y-auto">
+        <div class="w-full max-w-4xl pt-8 pb-4">
+            <h1 class="text-4xl font-extrabold text-yellow-600 mb-2 text-center">
+                Peta Pengetahuan Kediri Raya 🗺️
+            </h1>
+            <p class="text-xl text-gray-600 mb-8 text-center">
+                Halo <span id="material-player-name" class="font-bold text-yellow-700"></span>! Pelajari ringkasan materi di bawah ini sebelum memulai kuis.
+            </p>
+            
+            <div id="material-content" class="space-y-6">
+                </div>
+
+            <div class="mt-10 mb-4 flex justify-center sticky bottom-0 bg-gray-100 pt-4 border-t border-gray-300 z-40">
+                <button class="modern-btn px-8 py-3 text-xl shadow-xl" onclick="showView('level-select')">
+                    Saya Siap! Mulai Kuis Sekarang
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="level-select-view" class="view-container flex-col items-center justify-start bg-gray-800 p-4 sm:p-8 z-30 overflow-y-auto">
+        <div class="w-full max-w-3xl pt-8 pb-4">
+            <h1 class="text-4xl font-extrabold text-white mb-2 text-center">Pilih Level Kuis</h1>
+            <p id="player-greeting" class="text-gray-400 mb-10 text-center text-lg">Halo, pilih level yang ingin kamu mainkan!</p>
+            
+            <div id="level-list" class="space-y-4">
+                </div>
+        </div>
+    </div>
+
+    <div id="quiz-view" class="view-container flex-col items-center justify-start bg-gray-100 p-4 sm:p-8 z-20 overflow-y-auto">
+        <div class="w-full max-w-3xl pt-8 pb-4">
+            
+            <div class="flex justify-between items-center mb-6 p-4 bg-white rounded-xl shadow-md border-b-4 border-yellow-500">
+                <div class="text-left">
+                    <p class="text-sm text-gray-500">Level Saat Ini:</p>
+                    <h2 id="quiz-level-title" class="text-2xl font-bold text-gray-800">Kuis Level X</h2>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-gray-500">Skor:</p>
+                    <p id="current-quiz-score" class="text-3xl font-extrabold text-yellow-600">0</p>
+                </div>
+            </div>
+
+            <div id="question-container" class="bg-white p-6 sm:p-8 rounded-xl shadow-lg mb-6 border-t-4 border-yellow-500">
+                </div>
+            
+            <div id="feedback-container" class="text-center h-12 mb-4">
+                </div>
+
+            <div class="text-center mt-6 text-lg font-semibold text-gray-600">
+                Pertanyaan ke-<span id="current-question-number">1</span> dari 5
+            </div>
+
+        </div>
+    </div>
+
+    <div id="result-view" class="view-container flex-col items-center justify-center bg-gray-900 z-10 p-4 sm:p-8">
+        <div class="w-full max-w-md p-10 bg-white/90 backdrop-blur-sm rounded-xl shadow-2xl text-center">
+            <h2 class="text-3xl font-extrabold text-gray-800 mb-4">
+                Hasil Kuis Level <span id="result-level-num" class="text-yellow-600">X</span>
+            </h2>
+            <p class="text-lg text-gray-700 mb-6">Untuk <span id="result-player-name" class="font-semibold">Pemain</span></p>
+
+            <div id="score-display" class="p-4 rounded-xl mb-6 transition duration-300">
+                <p class="text-xl font-bold text-gray-800">Skor Akhir:</p>
+                <p id="final-score" class="text-5xl font-extrabold mt-1 text-red-500"></p>
+            </div>
+
+            <p id="result-message" class="text-lg font-semibold mb-8 text-gray-800">
+                </p>
+
+            <div id="result-actions" class="space-y-3">
+                </div>
+        </div>
+    </div>
+    
+    <div id="special-result-view" class="view-container flex-col items-center justify-center bg-gray-900 z-10 p-4 sm:p-8 relative overflow-hidden">
+        <div id="confetti-layer" class="absolute inset-0 z-0"></div>
+
+        <div class="w-full max-w-lg p-10 bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl text-center z-10 animate-scale-in">
+            <h2 id="special-result-title" class="text-5xl font-extrabold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600 drop-shadow-lg">
+                </h2>
+            <p class="text-xl text-gray-700 mb-6">Anda telah masuk Top 3 Skor Kumulatif!</p>
+
+            <div id="badge-display" class="my-8">
+                </div>
+
+            <div class="p-4 bg-yellow-50 rounded-xl mb-8">
+                <p class="text-lg font-bold text-gray-800">Skor Kumulatif Anda:</p>
+                <p id="total-cumulative-score" class="text-4xl font-extrabold text-yellow-700 mt-1"></p>
+            </div>
+
+            <div id="special-actions" class="space-y-4">
+                <button class="modern-btn w-full" onclick="showView('level-select')">
+                    Kembali ke Menu Level
+                </button>
+                <button class="w-full text-sm text-red-500 hover:text-red-700 transition" onclick="resetAllDataConfirmation()">
+                    Reset Data dan Skor
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ... KODE JAVASCRIPT AKAN DISIMPAN DI SINI
+    </script>
+</body>
+</html>
