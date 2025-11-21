@@ -265,7 +265,7 @@ const renderLevelSelection = () => {
 
 const startQuiz = (level) => {
     currentLevel = level;
-    currentQuesAtionIndex = 0;
+    currentQuestionIndex = 0;
     currentScore = 0;
     document.getElementById('quiz-level-title').textContent = `Kuis Level ${level}: ${quizData[level - 1].theme}`;
     document.getElementById('current-quiz-score').textContent = currentScore;
